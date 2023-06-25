@@ -27,13 +27,14 @@ var map;
 export default function Home() {
 
   const apiURL = "https://citygrid.vrworkers.workers.dev";
+  const [tab,setTab] = useState(1);
   const [data, setData] = useState([]);
   const [cities,setCities] = useState([]);
   const [countries,setCountries] = useState([{"country": "India"}])
   const [country,setCountry] = useState("India")
   const [selectedCity, setselectedCity] = useState("Vijayawada");
   const [pop, setPop] = useState(200000);
-  const [coor, setcoor] = useState({ lat: 16.50, lon: 80.64 })
+  const [coor, setcoor] = useState({ lat: 16, lon: 80 })
 
   useEffect(()=>{
     let con = localStorage.getItem("countryList")
@@ -49,6 +50,12 @@ export default function Home() {
         };
         getCountries();
     }
+  },[])
+
+
+  useEffect(()=>{
+
+  
   },[])
 
   useEffect(()=>{
@@ -71,18 +78,16 @@ export default function Home() {
         map = map.off();
         map = map.remove(); } 
       let contain = []
-      let geofeature = []
       let activeCity = cities.filter((a) => a.name === selectedCity);
       activeCity = activeCity && "length" in activeCity ? activeCity[0] : cities[0];
-      let tcoor = { lat: activeCity.lat, lon: activeCity.lon };
-      setcoor(tcoor) 
+      let tcoor = { lat: activeCity.lat, lon: activeCity.lon }; 
 
       map = L.map('map', {
         center: [tcoor.lat, tcoor.lon],
         zoom: 8
       });
       L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-        maxZoom: 15
+        maxZoom: tab === 1 ? 15 : 5
       }).addTo(map);
 
 
@@ -97,12 +102,13 @@ export default function Home() {
       })
 
       contain.sort((a,b) => a.distance - b.distance)
-      contain.slice(0,10).map((b,i)=>{
+      contain.slice(0,tab === 1 ? 10 : 500 ).map((b,i)=>{
         let line = [[tcoor.lat, tcoor.lon], [b.lat1, b.lon1]];
 
+        if(tab === 1){
         L.polyline(line, {color: 'red'}).addTo(map).bindTooltip(
           `${b.city1}-${Number(b.distance).toFixed(0)} KM`, {offset: [-100, i*10], sticky : true, permanent : true}).openTooltip();
-
+        }
         // zoom the map to the polyline
         //map.fitBounds(polyline.getBounds());
 
@@ -126,11 +132,39 @@ export default function Home() {
     setData(dat);
   }
 
+  useEffect(()=>{
+
+    let qs = `samelat?lat=${coor.lat}`;
+    if(coor.lat === null)
+      qs = `samelon?lon=${coor.lon}`
+    const bylatlon = async () => {
+      const resp = await fetch(`${apiURL}/api/${qs}`);
+      const postResp = await resp.json();
+      setCities(postResp);
+      if(postResp.length > 0){
+      setselectedCity( postResp[0].name);
+      }
+    };
+
+  bylatlon();
+},[coor])
+
   return ( 
             !isSSREnabled() ?
             <>   
+
+               { tab === 2 && <>
+                <InputNumber value={coor.lat} min={-90} max={90} 
+                onChange={(v)=> {setcoor({lon : null , lat : v});  }} ></InputNumber>
+                <InputNumber value={coor.lon} min={-180} max={180} 
+                onChange={(v)=> {setcoor({lat : null, lon : v});     } } ></InputNumber>
+                </> 
+                }
+
+                {tab === 1 &&  <>
+                  
                 <h4>Plot the geographically nearest cities to a town or city and above a population threshold</h4>
-                <Select style={{ width: '400px' }} title={"Select the country"}
+                  <Select style={{ width: '400px' }} title={"Select the country"}
                   placeholder={'Select Country'} allowClear showSearch
                   value={country} onChange={(v) => setCountry(v)} >
                   { 
@@ -144,7 +178,7 @@ export default function Home() {
                   {cities.map((b, _) => {
                     return <Select.Option key={b.name} >{b.name}</Select.Option>
                   })}
-                </Select>
+                </Select> 
                 <Select style={{ width: 200 }} placeholder={"Select population limit"} value={pop}
                 title={"Filter the cities by population limit"}
                   onChange={(v) => setPop(v)}>
@@ -153,8 +187,10 @@ export default function Home() {
                     3300000, 4000000, 5000000, 6600000, 8800000].map((b) => {
                       return <Select.Option key={b}>{b}</Select.Option>
                     })}
-                </Select>
-                
+                </Select></>}
+                <InputNumber value={tab} min={1} max={2} 
+                onChange={(v)=> {setTab(v);  }} ></InputNumber>
+              
 
 
                 <div id="map" style={{ height: 600 }}></div>
