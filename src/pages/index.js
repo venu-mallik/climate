@@ -56,6 +56,7 @@ export default function Home() {
       const resp = await fetch(`${apiURL}/api/country?country=${country}`);
       const postResp = await resp.json();
       setCities(postResp);
+      setselectedCity( country === "India" ? "Vijayawada" : postResp[0].name);
   };
 
   getCountryData();
@@ -129,6 +130,14 @@ export default function Home() {
             !isSSREnabled() ?
             <>   
                 <h4>Plot the geographically nearest cities to a town or city and above a population threshold</h4>
+                <Select style={{ width: '500px' }} title={"Select the country"}
+                  placeholder={'Select Country'} allowClear showSearch
+                  value={country} onChange={(v) => setCountry(v)} >
+                  { 
+                   countries.map((b, _) => {
+                    return <Select.Option key={b.country} >{b.country}</Select.Option>
+                  })}
+                </Select>
                 <Select style={{ width: '500px' }} title={"Select the city from which you want to measure"}
                   placeholder={'Select City'} allowClear showSearch
                   value={selectedCity} onChange={(v) => setselectedCity(v)} >
