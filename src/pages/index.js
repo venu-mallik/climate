@@ -79,10 +79,10 @@ export default function Home() {
 
       map = L.map('map', {
         center: [tcoor.lat, tcoor.lon],
-        zoom: 5
+        zoom: 8
       });
       L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-        maxZoom: 18
+        maxZoom: 15
       }).addTo(map);
 
 
@@ -97,11 +97,11 @@ export default function Home() {
       })
 
       contain.sort((a,b) => a.distance - b.distance)
-      contain.slice(0,10).map((b)=>{
+      contain.slice(0,10).map((b,i)=>{
         let line = [[tcoor.lat, tcoor.lon], [b.lat1, b.lon1]];
 
-        L.polyline(line, {color: 'red'}).addTo(map).bindPopup(
-          `${b.city1}-${b.city2}-${Number(b.distance).toFixed(0)}`).openPopup();
+        L.polyline(line, {color: 'red'}).addTo(map).bindTooltip(
+          `${b.city1}-${Number(b.distance).toFixed(0)} KM`, {offset: [-100, i*10], sticky : true, permanent : true}).openTooltip();
 
         // zoom the map to the polyline
         //map.fitBounds(polyline.getBounds());
@@ -130,7 +130,7 @@ export default function Home() {
             !isSSREnabled() ?
             <>   
                 <h4>Plot the geographically nearest cities to a town or city and above a population threshold</h4>
-                <Select style={{ width: '500px' }} title={"Select the country"}
+                <Select style={{ width: '400px' }} title={"Select the country"}
                   placeholder={'Select Country'} allowClear showSearch
                   value={country} onChange={(v) => setCountry(v)} >
                   { 
@@ -138,7 +138,7 @@ export default function Home() {
                     return <Select.Option key={b.country} >{b.country}</Select.Option>
                   })}
                 </Select>
-                <Select style={{ width: '500px' }} title={"Select the city from which you want to measure"}
+                <Select style={{ width: '400px' }} title={"Select the city from which you want to measure"}
                   placeholder={'Select City'} allowClear showSearch
                   value={selectedCity} onChange={(v) => setselectedCity(v)} >
                   {cities.map((b, _) => {
@@ -149,7 +149,8 @@ export default function Home() {
                 title={"Filter the cities by population limit"}
                   onChange={(v) => setPop(v)}>
                   {
-                    [1000, 2000, 5000, 10000, 15000, 25000, 50000, 75000, 100000, 200000, 500000, 1000000, 2000000].map((b) => {
+                    [1000, 2000, 5000, 10000, 15000, 25000, 50000, 75000, 100000, 200000, 500000, 1000000,1500000, 2000000,
+                    3300000, 4000000, 5000000, 6600000, 8800000].map((b) => {
                       return <Select.Option key={b}>{b}</Select.Option>
                     })}
                 </Select>
