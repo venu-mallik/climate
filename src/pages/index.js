@@ -128,12 +128,12 @@ export default function Home() {
   return ( 
             !isSSREnabled() ?
             <>   
-                <h4>Plot the nearest cities to a town or city and above a population threshold</h4>
+                <h4>Plot the geographically nearest cities to a town or city and above a population threshold</h4>
                 <Select style={{ width: '500px' }} title={"Select the city from which you want to measure"}
                   placeholder={'Select City'} allowClear showSearch
                   value={selectedCity} onChange={(v) => setselectedCity(v)} >
                   {cities.map((b, _) => {
-                    return <Select.Option key={b.area} >{b.area}</Select.Option>
+                    return <Select.Option key={b.name} >{b.name}</Select.Option>
                   })}
                 </Select>
                 <Select style={{ width: 200 }} placeholder={"Select population limit"} value={pop}
