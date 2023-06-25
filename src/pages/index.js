@@ -26,28 +26,46 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 var map;
 export default function Home() {
 
+  const apiURL = "https://citygrid.vrworkers.workers.dev";
   const [data, setData] = useState([]);
   const [cities,setCities] = useState([]);
+  const [countries,setCountries] = useState([{"country": "India"}])
   const [country,setCountry] = useState("India")
   const [selectedCity, setselectedCity] = useState("Vijayawada");
   const [pop, setPop] = useState(200000);
   const [coor, setcoor] = useState({ lat: 16.50, lon: 80.64 })
 
   useEffect(()=>{
-    const getPost = async () => {
-      const resp = await fetch(`api/data`);
+    let con = localStorage.getItem("countryList")
+    if(con){
+      setCountries(JSON.parse(con))
+    }
+    else{
+        const getCountries = async () => {
+          const resp = await fetch(`${apiURL}/api/countries`);
+          const postResp = await resp.json();
+          localStorage.setItem(JSON.stringify(postResp));
+          setCountries(postResp);
+        };
+        getCountries();
+    }
+  },[])
+
+  useEffect(()=>{
+    const getCountryData = async () => {
+      const resp = await fetch(`${apiURL}/api/country?country=${country}`);
       const postResp = await resp.json();
-      setCities(postResp.data);
+      setCities(postResp);
   };
 
-  getPost();
+  getCountryData();
 
   },[country])
 
 
   useEffect(() => {
 
-    if (window ) {
+    if (window & cities.length > 0) {
       if (map) { 
         map = map.off();
         map = map.remove(); } 
@@ -98,7 +116,7 @@ export default function Home() {
       setData(contain)
     }
 
-  }, [ selectedCity, pop ])
+  }, [ selectedCity, pop , cities])
 
   function onChangeTable(pagination, filters, sorter, extra) {
     console.log('params', sorter, extra);
