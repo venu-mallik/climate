@@ -65,7 +65,7 @@ export default function Home() {
 
   useEffect(() => {
 
-    if (window & cities.length > 0) {
+    if (window && cities.length > 0) {
       if (map) { 
         map = map.off();
         map = map.remove(); } 
