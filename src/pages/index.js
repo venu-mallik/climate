@@ -44,7 +44,7 @@ export default function Home() {
         const getCountries = async () => {
           const resp = await fetch(`${apiURL}/api/countries`);
           const postResp = await resp.json();
-          localStorage.setItem(JSON.stringify(postResp));
+          localStorage.setItem("countryList",JSON.stringify(postResp));
           setCountries(postResp);
         };
         getCountries();
@@ -71,7 +71,7 @@ export default function Home() {
         map = map.remove(); } 
       let contain = []
       let geofeature = []
-      let activeCity = cities.filter((a) => a.area === selectedCity);
+      let activeCity = cities.filter((a) => a.name === selectedCity);
       activeCity = activeCity && "length" in activeCity ? activeCity[0] : cities[0];
       let tcoor = { lat: activeCity.lat, lon: activeCity.lon };
       setcoor(tcoor) 
@@ -89,7 +89,7 @@ export default function Home() {
         let d = getDistanceFromLatLonInKm(tcoor.lat, tcoor.lon, rec.lat, rec.lon);
         if (rec.population > pop)
           contain.push({
-            'city1': rec.name, 'pop1': rec.pop, 'pop2': activeCity.pop,
+            'city1': rec.name, 'pop1': rec.population, 'pop2': activeCity.population,
             'distance': d, 'city2': activeCity.name,
             'lat1': rec.lat, 'lon1': rec.lon
           })
