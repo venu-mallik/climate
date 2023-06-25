@@ -7,6 +7,6 @@ export function onRequestGet(context) {
     cities.map(c => li.add(c.country))
     let init = "India"
 
-    return Response.json( { "countries" : li , "data" : cities.filter((c) => c.country === init ) })
+    return new Response.json( { "countries" : li , "data" : cities.filter((c) => c.country === init ) })
 
 }

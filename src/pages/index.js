@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Col, Row, Select, Layout, Table, Menu, Tag, InputNumber, Tooltip } from 'antd';
-//import { cities } from '../functions/cities';
-import { Link, useParams } from 'react-router-dom';
-
 
 
 const isSSREnabled = () => typeof window === 'undefined';
@@ -31,29 +28,33 @@ export default function Home() {
 
   const [data, setData] = useState([]);
   const [cities,setCities] = useState([]);
+  const [country,setCountry] = useState("India")
   const [selectedCity, setselectedCity] = useState("Vijayawada");
   const [pop, setPop] = useState(200000);
   const [coor, setcoor] = useState({ lat: 16.50, lon: 80.64 })
-  const { id } = useParams();
+
+  useEffect(()=>{
+    const getPost = async () => {
+      const resp = await fetch(`api/data`);
+      const postResp = await resp.json();
+      setCities(postResp.data);
+  };
+
+  getPost();
+
+  },[country])
+
 
   useEffect(() => {
 
-    const getPost = async () => {
-        const resp = await fetch(`/api/data`);
-        const postResp = await resp.json();
-        setCities(postResp.data);
-    };
-
-    getPost();
-
-    if (window) {
+    if (window ) {
       if (map) { 
         map = map.off();
         map = map.remove(); } 
       let contain = []
       let geofeature = []
       let activeCity = cities.filter((a) => a.area === selectedCity);
-      activeCity = activeCity.length > 0 ? activeCity[0] : cities[0];
+      activeCity = activeCity && "length" in activeCity ? activeCity[0] : cities[0];
       let tcoor = { lat: activeCity.lat, lon: activeCity.lon };
       setcoor(tcoor) 
 
@@ -97,7 +98,7 @@ export default function Home() {
       setData(contain)
     }
 
-  }, [ selectedCity, pop, id])
+  }, [ selectedCity, pop ])
 
   function onChangeTable(pagination, filters, sorter, extra) {
     console.log('params', sorter, extra);
