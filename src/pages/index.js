@@ -39,9 +39,9 @@ export default function Home() {
   useEffect(() => {
 
     const getPost = async () => {
-        const resp = await fetch(`/api/${id}`);
+        const resp = await fetch(`/api/data`);
         const postResp = await resp.json();
-        setCities(postResp);
+        setCities(postResp.data);
     };
 
     getPost();
