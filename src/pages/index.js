@@ -27,14 +27,14 @@ var map;
 
 function runPlot(from , data, type ){
 
-  let slice = {"bubble": 100, "line": 15, "polygon": 10}
+  let slice = {"bubble": undefined, "line": 15, "polygon": 10}
   if (map) { 
     map = map.off();
     map = map.remove(); } 
   
     map = L.map('map', {
       center: [from.lat, from.lon],
-      zoom: 8
+      zoom: 3
     });
     L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
       maxZoom: 12
@@ -72,7 +72,20 @@ function runPlot(from , data, type ){
 
 }
 
-const presets = [{country :"Top250"},{ country:"Top100"}, { country : "Top50"}];
+function getPresets(){
+
+  let p = [{country :"Top250"},{ country:"Top100"}, { country : "Top50"}]
+
+  for(let i = 0; i < 100; i = i + 5 ){
+      let j = i+5;
+      p.push({ country : `$Range_${i*100000}_${(j)*100000}`})
+  }
+  p.push({ country : `$Range_0_100000`})
+  p.push({ country : `$Range_5000000_100000000`})
+  return p;
+}
+
+const presets = getPresets();
 
 export default function Home() {
 
@@ -107,8 +120,10 @@ export default function Home() {
       const resp = await fetch(`${apiURL}/api/country?country=${country}`);
       const postResp = await resp.json();
       setCities(postResp);
+      if(postResp.length > 0){
       setselectedCity( country === "India" ? {name: "Vijayawada", lat: 16, lon: 80 } : postResp[0]);
-  };
+      }
+    };
 
   getCountryData();
 
@@ -178,8 +193,8 @@ export default function Home() {
                   })}
                 </Select>
 
-                  <Select style={{ width: 200 }} title={"Select the country"}
-                  placeholder={'Select Country'} allowClear showSearch
+                  <Select style={{ width: 300 }} title={"Select the country"}
+                  placeholder={'Select Range/Top/Country'} allowClear showSearch
                   value={country} onChange={(v) => setCountry(v)} >
                   { 
 
