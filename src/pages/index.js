@@ -27,7 +27,7 @@ var map;
 
 function runPlot(from , data, type ){
 
-  let slice = {"bubble": 50, "line": 20, "polygon": 10}
+  let slice = {"bubble": 25, "line": 15, "polygon": 10}
   if (map) { 
     map = map.off();
     map = map.remove(); } 
