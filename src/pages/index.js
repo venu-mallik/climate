@@ -72,7 +72,7 @@ export default function Home() {
   const [countries,setCountries] = useState([{"country": "India"}])
   const [country,setCountry] = useState("India")
   const [selectedCity, setselectedCity] = useState({name: "Vijayawada", lat: 16, lon: 80 });
-  const [pop, setPop] = useState(200000);
+  const [pop, setPop] = useState(500000);
 
   useEffect(()=>{
     let con = localStorage.getItem("countryList")
@@ -126,7 +126,7 @@ export default function Home() {
       runPlot(selectedCity, contain, plotType);
     }
 
-  }, [selectedCity, cities])
+  }, [selectedCity, cities, pop])
 
 
   function onChangeTable(pagination, filters, sorter, extra) {
