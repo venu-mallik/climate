@@ -138,6 +138,9 @@ export default function Home() {
 
   useEffect(()=>{
 
+    if(true)
+      return;
+
     let qs = `samelat?lat=${selectedCity.lat}`;
     if(selectedCity.lat === null)
       qs = `samelon?lon=${selectedCity.lon}`
