@@ -27,7 +27,7 @@ var map;
 
 function runPlot(from , data, type ){
 
-  let slice = {"bubble": 25, "line": 15, "polygon": 10}
+  let slice = {"bubble": 100, "line": 15, "polygon": 10}
   if (map) { 
     map = map.off();
     map = map.remove(); } 
@@ -65,13 +65,14 @@ function runPlot(from , data, type ){
             fillColor: '#f03',
             fillOpacity: 1/(b.pop1),
             radius: 0.0005*b.pop1
-        }).addTo(map).bindTooltip(
-          `${b.city1}-${Number(b.pop1).toFixed(0)}`, 
-          {offset: [-10, i*10], sticky : false, permanent : true}).openTooltip();; 
+        }).addTo(map).bindPopup(
+          `${b.city1}-${Number(b.pop1).toFixed(0)}`).openPopup();
         }
     });
 
 }
+
+const presets = [{country :"Top250"},{ country:"Top100"}, { country : "Top50"}];
 
 export default function Home() {
 
@@ -181,7 +182,8 @@ export default function Home() {
                   placeholder={'Select Country'} allowClear showSearch
                   value={country} onChange={(v) => setCountry(v)} >
                   { 
-                   countries.map((b, _) => {
+
+                   [...presets ,...countries].map((b, _) => {
                     return <Select.Option key={b.country} >{b.country}</Select.Option>
                   })}
                 </Select>
