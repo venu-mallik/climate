@@ -46,7 +46,7 @@ function runPlot(from , data, type ){
         {
           L.polyline(line, {color: 'red'}).addTo(map).bindTooltip(
           `${b.city1}-${Number(b.distance).toFixed(0)} KM`, 
-          {offset: [-100, i*10], sticky : true, permanent : true}).openTooltip();
+          {offset: [-100, i*10], sticky : false, permanent : true}).openTooltip();
         
           L.circle([b.lat1 , b.lon1]
             ,{
@@ -67,7 +67,7 @@ function runPlot(from , data, type ){
             radius: 0.0005*b.pop1
         }).addTo(map).bindTooltip(
           `${b.city1}-${Number(b.pop1).toFixed(0)}`, 
-          {offset: [-100, i*10], sticky : true, permanent : true}).openTooltip();; 
+          {offset: [-10, i*10], sticky : false, permanent : true}).openTooltip();; 
         }
     });
 
