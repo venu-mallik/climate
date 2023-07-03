@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useMemo, useEffect, useState } from 'react';
 import { Col, Row, Select, Layout, Table, Menu, Tag, InputNumber, Tooltip } from 'antd';
 import { SunPosition ,AngleFromSun, SearchRiseSet, Observer, AstroTime  }  from 'astronomy-engine';
 import vegaEmbed from 'vega-embed';
@@ -151,6 +151,7 @@ export default function Home() {
   const [countries,setCountries] = useState([{"country": "India"}])
   const [country,setCountry] = useState("India");
   const [cityData,setCityData] = useState({});
+  const [riseData,setRiseData] = useState([]);
   const [selectedCity, setselectedCity] = useState({name: "Vijayawada", lat: 16, lon: 80, elevation : 30 });
   const [pop, setPop] = useState(500000);
 
@@ -176,9 +177,8 @@ export default function Home() {
       const resp = await fetch(`${apiURL}/api/country?country=${country}`);
       const postResp = await resp.json();
       setCities(postResp);
-      if(postResp.length > 0){
-      setselectedCity( country === "India" ? {name: "Vijayawada", lat: 16, lon: 80, elevation: 30 } : postResp[0]);
-      }
+      setselectedCity(postResp[0]);
+      
     };
 
   getCountryData();
@@ -193,8 +193,8 @@ export default function Home() {
       let contain = []
       let activeCity = cities.filter((a) => a.name === selectedCity.name);
       activeCity = activeCity && "length" in activeCity ? activeCity[0] : cities[0];
+      console.log(activeCity, cities);
       let tcoor = { lat: activeCity.lat, lon: activeCity.lon }; 
-      let now = new AstroTime(new Date()).AddDays(-1);
       cities.map((rec) => {
         let d = getDistanceFromLatLonInKm(tcoor.lat, tcoor.lon, rec.lat, rec.lon);        
         if (rec.population > pop)
@@ -209,11 +209,13 @@ export default function Home() {
       runPlot(selectedCity, contain, plotType);
     }
 
-  }, [selectedCity, cities, pop])
+  }, [ selectedCity])
 
   useEffect(()=>{
     let data = []
-    let uvi = cityData["current"]["uv"];
+    if("current" in cityData === false)
+      return;
+    let uvi = cityData['forecast']['forecastday'][0]["day"]["uv"]
     const obs = new Observer( selectedCity.lat, selectedCity.lon, 
       Number(selectedCity.elevation) === 'NaN' || Number(selectedCity.elevation) === -9999
     ? 0 : Number(selectedCity.elevation) );
@@ -237,35 +239,24 @@ export default function Home() {
                   'moonrise' : moonrise?.date, 'moonset' : moonset?.date,
                   'sunhour' : sh,
                   'moonhour' : mh,
-                  'uv' : uv,
-                  "vitd-fair": UVBOOK[uv]*100/sh,
-                  "vitd-dark" :   UVBOOK[uv]*100*2/sh
+                  "vitd-fair": UVBOOK[uvi]*100/sh,
+                  "vitd-dark":  UVBOOK[uvi]*100*2/sh
               }
           )
       });
-      console.log(data);
+      setRiseData(data);
       runVegaPlotYearlySunHour(data);
     },[cityData])
 
-
-  useState(()=>{
-
-    const getClimateData = async () => {
-
-      const resp = await fetch(`https://api.weatherapi.com/v1/current.json?key=995118c2fcf34632a75113058230307&q=${selectedCity.lat},${selectedCity.lon}&aqi=yes
+  const getClimate = useCallback(async ()=>{
+      const resp = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=995118c2fcf34632a75113058230307&q=${selectedCity.lat},${selectedCity.lon}&aqi=yes
       `);
       const postResp = await resp.json();
       console.log(postResp);
       setCityData(postResp);
-    };
-    getClimateData();
-
   },[selectedCity])
 
-
-
   function onChangeTable(pagination, filters, sorter, extra) {
-    console.log('params', sorter, extra);
     let col = sorter.field;
     let dat = data.sort((a, b) => a[col] - b[col])
     setData(dat);
@@ -311,7 +302,7 @@ export default function Home() {
                 </Select>
                 <Select style={{ width: 200 }} title={"Select the city from which you want to measure"}
                   placeholder={'Select City'} allowClear showSearch
-                  value={selectedCity.name} onChange={(v) => setselectedCity(JSON.parse(v))} >
+                  value={selectedCity.name} onSelect={getClimate} onChange={(v) => {setCityData({});setselectedCity(JSON.parse(v));  }} >
                   {cities.map((b, _) => {
                     return <Select.Option key={b.name} value={JSON.stringify(b)} >{b.name}</Select.Option>
                   })}
@@ -325,6 +316,9 @@ export default function Home() {
                       return <Select.Option key={b}>{b}</Select.Option>
                     })}
                 </Select>
+                
+                { 'forecast' in cityData ? JSON.stringify(cityData['forecast']['forecastday'][0]['day']) : null}
+
                 <div style={{display : "inline-flex"}}>
                 <div id="map" style={{ height: 300 , width : 500 }} title={ `${selectedCity.name} Sunlight Availability`}></div>
                 <div id="vis"></div>
