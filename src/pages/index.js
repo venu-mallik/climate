@@ -199,9 +199,9 @@ export default function Home() {
 
     Object.values(times).map((now, index) => {
     let sunrise = SearchRiseSet("Sun", obs, 1 , now, 1  )
-    let sunset = SearchRiseSet("Sun", obs, -1 , now, 1  )
+    let sunset = SearchRiseSet("Sun", obs, -1 , sunrise ? sunrise : now , 1  )
     let moonrise = SearchRiseSet("Moon", obs, 1 , now, 1  )
-    let moonset = SearchRiseSet("Moon", obs, -1 , now, 1  )  
+    let moonset = SearchRiseSet("Moon", obs, -1 , moonrise ? moonrise : now, 1  )  
       data.push(
               { 
                 'time' : now,
