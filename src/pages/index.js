@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Col, Row, Select, Layout, Table, Menu, Tag, InputNumber, Tooltip } from 'antd';
 import { SunPosition ,AngleFromSun, SearchRiseSet, Observer, AstroTime  }  from 'astronomy-engine';
+import vegaEmbed from 'vega-embed';
+
 
 const isSSREnabled = () => typeof window === 'undefined';
 
@@ -69,6 +71,35 @@ function runPlot(from , data, type ){
           `${b.city1}-${Number(b.pop1).toFixed(0)}`).openPopup();
         }
     });
+}
+
+
+function runVegaPlotYearlySunHour(body){
+
+  var vlSpec = {
+    width: 500,
+    height: 300,
+    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    data: {
+      values: body
+    },
+    "repeat": { "layer": ['moonhour','sunhour']},
+    "spec":{
+    "mark": {"type":"point", "tooltip": true },
+    "encoding": {
+      "x": {"type": "temporal", "field": "time"},
+      "y": { "field": {"repeat": "layer"}, "type": "quantitative" , 
+             "axis": {"values": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]}
+          },
+      "color": {"datum": {"repeat": "layer"}, "type": "nominal"}, 
+    }
+  }
+  };
+
+  // Embed the visualization in the container with id `vis`
+  vegaEmbed('#vis', vlSpec);
+
+
 
 }
 
@@ -95,7 +126,7 @@ export default function Home() {
   const [cities,setCities] = useState([]);
   const [countries,setCountries] = useState([{"country": "India"}])
   const [country,setCountry] = useState("India")
-  const [selectedCity, setselectedCity] = useState({name: "Vijayawada", lat: 16, lon: 80 });
+  const [selectedCity, setselectedCity] = useState({name: "Vijayawada", lat: 16, lon: 80, elevation : 30 });
   const [pop, setPop] = useState(500000);
 
   useEffect(()=>{
@@ -121,7 +152,7 @@ export default function Home() {
       const postResp = await resp.json();
       setCities(postResp);
       if(postResp.length > 0){
-      setselectedCity( country === "India" ? {name: "Vijayawada", lat: 16, lon: 80 } : postResp[0]);
+      setselectedCity( country === "India" ? {name: "Vijayawada", lat: 16, lon: 80, elevation: 30 } : postResp[0]);
       }
     };
 
@@ -140,21 +171,12 @@ export default function Home() {
       let tcoor = { lat: activeCity.lat, lon: activeCity.lon }; 
       let now = new AstroTime(new Date()).AddDays(-1);
       cities.map((rec) => {
-        let d = getDistanceFromLatLonInKm(tcoor.lat, tcoor.lon, rec.lat, rec.lon);
-        const obs = new Observer(rec.lat, rec.lon, Number(rec.elevation) === -9999 ? 0 : Number(rec.elevation) );
-        let sunrise = SearchRiseSet("Sun", obs, 1 , now, 1  )
-        let sunset = SearchRiseSet("Sun", obs, -1 , now, 1  )
-        let moonrise = SearchRiseSet("Moon", obs, 1 , now, 1  )
-        let moonset = SearchRiseSet("Moon", obs, -1 , now, 1  )
-        //console.log(sunrise, sunset, moonrise, moonset);
+        let d = getDistanceFromLatLonInKm(tcoor.lat, tcoor.lon, rec.lat, rec.lon);        
         if (rec.population > pop)
           contain.push({
             'city1': rec.name, 'pop1': rec.population, 'pop2': activeCity.population,
             'distance': Number(d).toFixed(2), 'city2': activeCity.name,
-            'lat1': rec.lat, 'lon1': rec.lon , 'sunrise' : sunrise?.date, 'sunset' : sunset?.date ,
-            'moonrise' : moonrise?.date, 'moonset' : moonset?.date,
-            'sunhour' : Number(Math.abs(sunrise?.date - sunset?.date )/36e5).toFixed(2),
-            'moonhour' : Number(Math.abs(moonrise?.date - moonset?.date)/36e5).toFixed(2) ,
+            'lat1': rec.lat, 'lon1': rec.lon 
           })
       })
       contain.sort((a,b) => a.distance - b.distance)
@@ -163,6 +185,35 @@ export default function Home() {
     }
 
   }, [selectedCity, cities, pop])
+
+  useEffect(()=>{
+    let data = []
+    const obs = new Observer( selectedCity.lat, selectedCity.lon, 
+      Number(selectedCity.elevation) === 'NaN' || Number(selectedCity.elevation) === -9999
+    ? 0 : Number(selectedCity.elevation) );
+    let times = []
+    const time = new AstroTime(new Date(`${new Date().getFullYear()}-01-01`));
+    Array(365).fill().map((_, index) => {
+      times.push(time.AddDays(index))
+    })
+
+    Object.values(times).map((now, index) => {
+    let sunrise = SearchRiseSet("Sun", obs, 1 , now, 1  )
+    let sunset = SearchRiseSet("Sun", obs, -1 , now, 1  )
+    let moonrise = SearchRiseSet("Moon", obs, 1 , now, 1  )
+    let moonset = SearchRiseSet("Moon", obs, -1 , now, 1  )  
+      data.push(
+              { 
+                'time' : now,
+                'sunrise' : sunrise?.date, 'sunset' : sunset?.date ,
+                  'moonrise' : moonrise?.date, 'moonset' : moonset?.date,
+                  'sunhour' : Number(Math.abs(sunset?.date.getTime() - sunrise?.date.getTime() )/36e5).toFixed(2),
+                  'moonhour' : Number(Math.abs(moonset?.date.getTime() - moonrise?.date.getTime())/36e5).toFixed(2) }
+          )
+      });
+      console.log(data);
+      runVegaPlotYearlySunHour(data);
+  },[selectedCity])
 
 
   function onChangeTable(pagination, filters, sorter, extra) {
@@ -226,8 +277,10 @@ export default function Home() {
                       return <Select.Option key={b}>{b}</Select.Option>
                     })}
                 </Select>
-
-                <div id="map" style={{ height: 600 }}></div>
+                <div style={{display : "inline-flex"}}>
+                <div id="map" style={{ height: 300 , width : 500 }} title={ `${selectedCity.name} Sunlight Availability`}></div>
+                <div id="vis"></div>
+                </div>
                 <Table dataSource={data} onChange={onChangeTable} >
                   <Table.Column dataIndex={'city1'} title={'city1'} filterIcon filterSearch></Table.Column>
                   <Table.Column dataIndex={'city2'} title={'city2'} render={(v, _) => v} ></Table.Column>
@@ -238,11 +291,6 @@ export default function Home() {
                   <Table.Column dataIndex={'distance'} title={'distance'} render={(v, _) => v}
                     sorter={true} sortOrder='ascend' sortDirections={['ascend' | 'descend']} ></Table.Column>
 
-                  <Table.Column dataIndex={'moonhour'} title={'Moon Hour'} render={(v, _) => v}
-                    sorter={true} sortOrder='ascend' sortDirections={['ascend' | 'descend']} ></Table.Column>
-
-                  <Table.Column dataIndex={'sunhour'} title={'Sun Hour'} render={(v, _) => v}
-                    sorter={true} sortOrder='ascend' sortDirections={['ascend' | 'descend']} ></Table.Column>
                 </Table>
 
               </>: null
