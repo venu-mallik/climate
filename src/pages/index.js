@@ -83,7 +83,7 @@ function runVegaPlotYearlySunHour(body){
     data: {
       values: body
     },
-    "repeat": { "layer": ['moonhour','sunhour']},
+    "repeat": { "layer": ['moonhour','sunhour','vitd-fair','vitd-dark']},
     "spec":{
     "mark": {"type":"point", "tooltip": true },
     "encoding": {
@@ -95,9 +95,31 @@ function runVegaPlotYearlySunHour(body){
     }
   }
   };
+  vegaEmbed('#vis', vlSpec);
+
+  var vlSpec1 = {
+    width: 500,
+    height: 300,
+    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    data: {
+      values: body
+    },
+
+    "mark": "area",
+    "encoding": {
+      "x": {"type": "temporal", "field": "time"},
+      "y": {
+        "title": "Daily Sunrise",
+        "field": "sunriseh",
+        "type": "quantitative"  
+      },
+      "y2": { "field": "sunseth" ,
+      "type": "quantitative"},
+    }
+  };
 
   // Embed the visualization in the container with id `vis`
-  vegaEmbed('#vis', vlSpec);
+  //vegaEmbed('#vis1', vlSpec1); 
 
 
 
@@ -118,6 +140,8 @@ function getPresets(){
 
 const presets = getPresets();
 
+const UVBOOK = { 1 : 0, 2 : 0 , 3 : 1.2, 4 : 1.2, 5 : 1.2, 6: 0.75, 7 : 0.75, 8 : 0.5, 9: 0.5 , 10 : 0.3 , 11: 0.3}
+
 export default function Home() {
 
   const apiURL = "https://citygrid.vrworkers.workers.dev";
@@ -125,7 +149,8 @@ export default function Home() {
   const [data, setData] = useState([]);
   const [cities,setCities] = useState([]);
   const [countries,setCountries] = useState([{"country": "India"}])
-  const [country,setCountry] = useState("India")
+  const [country,setCountry] = useState("India");
+  const [cityData,setCityData] = useState({});
   const [selectedCity, setselectedCity] = useState({name: "Vijayawada", lat: 16, lon: 80, elevation : 30 });
   const [pop, setPop] = useState(500000);
 
@@ -188,6 +213,7 @@ export default function Home() {
 
   useEffect(()=>{
     let data = []
+    let uvi = cityData["current"]["uv"];
     const obs = new Observer( selectedCity.lat, selectedCity.lon, 
       Number(selectedCity.elevation) === 'NaN' || Number(selectedCity.elevation) === -9999
     ? 0 : Number(selectedCity.elevation) );
@@ -202,18 +228,39 @@ export default function Home() {
     let sunset = SearchRiseSet("Sun", obs, -1 , sunrise ? sunrise : now , 1  )
     let moonrise = SearchRiseSet("Moon", obs, 1 , now, 1  )
     let moonset = SearchRiseSet("Moon", obs, -1 , moonrise ? moonrise : now, 1  )  
+    let sh = Number(Math.abs(sunset?.date.getTime() - sunrise?.date.getTime() )/36e5).toFixed(2);
+    let mh = Number(Math.abs(moonset?.date.getTime() - moonrise?.date.getTime())/36e5).toFixed(2);
       data.push(
               { 
                 'time' : now,
                 'sunrise' : sunrise?.date, 'sunset' : sunset?.date ,
                   'moonrise' : moonrise?.date, 'moonset' : moonset?.date,
-                  'sunhour' : Number(Math.abs(sunset?.date.getTime() - sunrise?.date.getTime() )/36e5).toFixed(2),
-                  'moonhour' : Number(Math.abs(moonset?.date.getTime() - moonrise?.date.getTime())/36e5).toFixed(2) }
+                  'sunhour' : sh,
+                  'moonhour' : mh,
+                  'uv' : uv,
+                  "vitd-fair": UVBOOK[uv]*100/sh,
+                  "vitd-dark" :   UVBOOK[uv]*100*2/sh
+              }
           )
       });
       console.log(data);
       runVegaPlotYearlySunHour(data);
+    },[cityData])
+
+
+  useState(()=>{
+
+    const getClimateData = async () => {
+
+      const resp = await fetch(`https://api.weatherapi.com/v1/current.json?key=995118c2fcf34632a75113058230307&q=${selectedCity.lat},${selectedCity.lon}&aqi=yes
+      `);
+      const postResp = await resp.json();
+      setCityData(postResp);
+    };
+    getClimateData();
+
   },[selectedCity])
+
 
 
   function onChangeTable(pagination, filters, sorter, extra) {
@@ -280,6 +327,9 @@ export default function Home() {
                 <div style={{display : "inline-flex"}}>
                 <div id="map" style={{ height: 300 , width : 500 }} title={ `${selectedCity.name} Sunlight Availability`}></div>
                 <div id="vis"></div>
+                </div>
+                <div style={{display : "inline-flex"}}>
+                <div id="vis1"></div>
                 </div>
                 <Table dataSource={data} onChange={onChangeTable} >
                   <Table.Column dataIndex={'city1'} title={'city1'} filterIcon filterSearch></Table.Column>
