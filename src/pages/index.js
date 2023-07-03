@@ -150,7 +150,7 @@ export default function Home() {
         if (rec.population > pop)
           contain.push({
             'city1': rec.name, 'pop1': rec.population, 'pop2': activeCity.population,
-            'distance': d, 'city2': activeCity.name,
+            'distance': Number(d).toFixed(2), 'city2': activeCity.name,
             'lat1': rec.lat, 'lon1': rec.lon , 'sunrise' : sunrise?.date, 'sunset' : sunset?.date ,
             'moonrise' : moonrise?.date, 'moonset' : moonset?.date,
             'sunhour' : Number(Math.abs(sunrise?.date - sunset?.date )/36e5).toFixed(2),
