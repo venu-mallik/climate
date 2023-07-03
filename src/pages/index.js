@@ -255,6 +255,7 @@ export default function Home() {
       const resp = await fetch(`https://api.weatherapi.com/v1/current.json?key=995118c2fcf34632a75113058230307&q=${selectedCity.lat},${selectedCity.lon}&aqi=yes
       `);
       const postResp = await resp.json();
+      console.log(postResp);
       setCityData(postResp);
     };
     getClimateData();
