@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Col, Row, Select, Layout, Table, Menu, Tag, InputNumber, Tooltip } from 'antd';
-
+import { SunPosition ,AngleFromSun, SearchRiseSet, Observer, AstroTime  }  from 'astronomy-engine';
 
 const isSSREnabled = () => typeof window === 'undefined';
 
@@ -138,13 +138,23 @@ export default function Home() {
       let activeCity = cities.filter((a) => a.name === selectedCity.name);
       activeCity = activeCity && "length" in activeCity ? activeCity[0] : cities[0];
       let tcoor = { lat: activeCity.lat, lon: activeCity.lon }; 
+      let now = new AstroTime(new Date()).AddDays(-1);
       cities.map((rec) => {
         let d = getDistanceFromLatLonInKm(tcoor.lat, tcoor.lon, rec.lat, rec.lon);
+        const obs = new Observer(rec.lat, rec.lon, Number(rec.elevation) === -9999 ? 0 : Number(rec.elevation) );
+        let sunrise = SearchRiseSet("Sun", obs, 1 , now, 1  )
+        let sunset = SearchRiseSet("Sun", obs, -1 , now, 1  )
+        let moonrise = SearchRiseSet("Moon", obs, 1 , now, 1  )
+        let moonset = SearchRiseSet("Moon", obs, -1 , now, 1  )
+        //console.log(sunrise, sunset, moonrise, moonset);
         if (rec.population > pop)
           contain.push({
             'city1': rec.name, 'pop1': rec.population, 'pop2': activeCity.population,
             'distance': d, 'city2': activeCity.name,
-            'lat1': rec.lat, 'lon1': rec.lon
+            'lat1': rec.lat, 'lon1': rec.lon , 'sunrise' : sunrise?.date, 'sunset' : sunset?.date ,
+            'moonrise' : moonrise?.date, 'moonset' : moonset?.date,
+            'sunhour' : Number(Math.abs(sunrise?.date - sunset?.date )/36e5).toFixed(2),
+            'moonhour' : Number(Math.abs(moonrise?.date - moonset?.date)/36e5).toFixed(2) ,
           })
       })
       contain.sort((a,b) => a.distance - b.distance)
@@ -182,8 +192,6 @@ export default function Home() {
   return ( 
             !isSSREnabled() ?
             <>   
-
-                <h4>Plot the geographically nearest cities to a town or city and above a population threshold</h4>
                 <Select style={{ width: 200 }} title={"Select the plot type"}
                   placeholder={'Plot type'} allowClear showSearch
                   value={plotType} onChange={(v) => {setPlotType(v); runPlot(selectedCity,data,v); }} >
@@ -228,6 +236,12 @@ export default function Home() {
                   <Table.Column dataIndex={'pop2'} title={'pop2'} render={(v, _) => v}   ></Table.Column>
 
                   <Table.Column dataIndex={'distance'} title={'distance'} render={(v, _) => v}
+                    sorter={true} sortOrder='ascend' sortDirections={['ascend' | 'descend']} ></Table.Column>
+
+                  <Table.Column dataIndex={'moonhour'} title={'Moon Hour'} render={(v, _) => v}
+                    sorter={true} sortOrder='ascend' sortDirections={['ascend' | 'descend']} ></Table.Column>
+
+                  <Table.Column dataIndex={'sunhour'} title={'Sun Hour'} render={(v, _) => v}
                     sorter={true} sortOrder='ascend' sortDirections={['ascend' | 'descend']} ></Table.Column>
                 </Table>
 
