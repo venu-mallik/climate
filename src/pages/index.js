@@ -1,77 +1,13 @@
 import { useCallback, useMemo, useEffect, useState } from 'react';
 import { Col, Row, Select, Layout, Table, Menu, Tag, InputNumber, Tooltip } from 'antd';
-import { SunPosition ,AngleFromSun, SearchRiseSet, Observer, AstroTime  }  from 'astronomy-engine';
+import {  SearchRiseSet, Observer, AstroTime  }  from 'astronomy-engine';
 import vegaEmbed from 'vega-embed';
+import { countryList } from '@/components/countriesList';
+import { getDistanceFromLatLonInKm } from '@/components/utils';
+import { HomeComponent } from '@/components/home';
 
 
 const isSSREnabled = () => typeof window === 'undefined';
-
-function deg2rad(deg) {
-  return deg * (Math.PI/180)
-}
-
-function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-    
-  var R = 6371; // Radius of the earth in km
-  var dLat = deg2rad(lat2-lat1);  // deg2rad below
-  var dLon = deg2rad(lon2-lon1); 
-  var a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2)
-    ; 
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-  var d = R * c; // Distance in km
-  return d;
-}
-
-var map;
-
-function runPlot(from , data, type ){
-
-  let slice = {"bubble": undefined, "line": 15, "polygon": 10}
-  if (map) { 
-    map = map.off();
-    map = map.remove(); } 
-  
-    map = L.map('map', {
-      center: [from.lat, from.lon],
-      zoom: 3
-    });
-    L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-      maxZoom: 12
-    }).addTo(map);
-
-    data.slice(0, slice[type]).map((b,i)=>{
-      let line = [[from.lat, from.lon], [b.lat1, b.lon1]];
-        if(["line"].includes(type))
-        {
-          L.polyline(line, {color: 'red'}).addTo(map).bindTooltip(
-          `${b.city1}-${Number(b.distance).toFixed(0)} KM`, 
-          {offset: [-100, i*10], sticky : false, permanent : true}).openTooltip();
-        
-          L.circle([b.lat1 , b.lon1]
-            ,{
-              color: 'red',
-              fillColor: '#f03',
-              fillOpacity: 1/(b.pop1),
-              radius: 0.0005*b.pop1
-          }).addTo(map)
-        }
-
-        if(["bubble"].includes(type))
-        {
-        L.circle([b.lat1 , b.lon1]
-          ,{
-            color: 'red',
-            fillColor: '#f03',
-            fillOpacity: 1/(b.pop1),
-            radius: 0.0005*b.pop1
-        }).addTo(map).bindPopup(
-          `${b.city1}-${Number(b.pop1).toFixed(0)}`).openPopup();
-        }
-    });
-}
 
 
 function runVegaPlotYearlySunHour(body){
@@ -145,32 +81,15 @@ const UVBOOK = { 1 : 0, 2 : 0 , 3 : 1.2, 4 : 1.2, 5 : 1.2, 6: 0.75, 7 : 0.75, 8 
 export default function Home() {
 
   const apiURL = "https://citygrid.vrworkers.workers.dev";
+  const [activeTab,setActiveTab] = useState(1);
   const [plotType,setPlotType] = useState("bubble");
   const [data, setData] = useState([]);
   const [cities,setCities] = useState([]);
-  const [countries,setCountries] = useState([{"country": "India"}])
   const [country,setCountry] = useState("India");
   const [cityData,setCityData] = useState({});
   const [riseData,setRiseData] = useState([]);
   const [selectedCity, setselectedCity] = useState({name: "Vijayawada", lat: 16, lon: 80, elevation : 30 });
   const [pop, setPop] = useState(500000);
-
-  useEffect(()=>{
-    let con = localStorage.getItem("countryList")
-    if(con){
-      setCountries(JSON.parse(con))
-    }
-    else{
-        const getCountries = async () => {
-          const resp = await fetch(`${apiURL}/api/countries`);
-          const postResp = await resp.json();
-          localStorage.setItem("countryList",JSON.stringify(postResp));
-          setCountries(postResp);
-        };
-        getCountries();
-    }
-  },[])
-
 
   useEffect(()=>{
     const getCountryData = async () => {
@@ -206,7 +125,6 @@ export default function Home() {
       })
       contain.sort((a,b) => a.distance - b.distance)
       setData(contain);
-      runPlot(selectedCity, contain, plotType);
     }
 
   }, [ selectedCity])
@@ -249,8 +167,7 @@ export default function Home() {
     },[cityData])
 
   const getClimate = useCallback(async ()=>{
-      const resp = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=995118c2fcf34632a75113058230307&q=${selectedCity.lat},${selectedCity.lon}&aqi=yes
-      `);
+      const resp = await fetch(`${apiURL}/api/weather?lat=${selectedCity.lat}&lon=${selectedCity.lon}`)
       const postResp = await resp.json();
       console.log(postResp);
       setCityData(postResp);
@@ -282,6 +199,27 @@ export default function Home() {
   return ( 
             !isSSREnabled() ?
             <>   
+              <Layout>
+          <Layout.Header
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <div className="demo-logo" />
+            <Menu theme="dark" mode="horizontal" defaultSelectedKeys={[activeTab]} 
+            items={[
+              {key: 1, 'label': 'Home'},
+              {key: 2, 'label': 'Climate'},
+              {key: 3, 'label': 'Explorer'}
+            ]}
+              onClick={(e) => { setActiveTab(e.key) }} />
+          </Layout.Header>
+          <Layout.Content>
+
+            {activeTab === 1 && <HomeComponent data={cities} country={country}/>}
+            
+            <br></br>
                 <Select style={{ width: 200 }} title={"Select the plot type"}
                   placeholder={'Plot type'} allowClear showSearch
                   value={plotType} onChange={(v) => {setPlotType(v); runPlot(selectedCity,data,v); }} >
@@ -296,7 +234,7 @@ export default function Home() {
                   value={country} onChange={(v) => setCountry(v)} >
                   { 
 
-                   [...presets ,...countries].map((b, _) => {
+                   [...presets ,...countryList].map((b, _) => {
                     return <Select.Option key={b.country} >{b.country}</Select.Option>
                   })}
                 </Select>
@@ -318,9 +256,8 @@ export default function Home() {
                 </Select>
                 
                 { 'forecast' in cityData ? JSON.stringify(cityData['forecast']['forecastday'][0]['day']) : null}
-
+                <br></br>
                 <div style={{display : "inline-flex"}}>
-                <div id="map" style={{ height: 300 , width : 500 }} title={ `${selectedCity.name} Sunlight Availability`}></div>
                 <div id="vis"></div>
                 </div>
                 <div style={{display : "inline-flex"}}>
@@ -337,7 +274,9 @@ export default function Home() {
                     sorter={true} sortOrder='ascend' sortDirections={['ascend' | 'descend']} ></Table.Column>
 
                 </Table>
-
+          
+                </Layout.Content>
+                </Layout>
               </>: null
   )
 }
