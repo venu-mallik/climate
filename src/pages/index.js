@@ -13,8 +13,8 @@ const isSSREnabled = () => typeof window === 'undefined';
 function runVegaPlotYearlySunHour(body){
 
   var vlSpec = {
-    width: 500,
-    height: 300,
+    width: "container",
+    height: "container",
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
     data: {
       values: body
@@ -236,14 +236,29 @@ export default function Home() {
                     })}
                 </Select> */}
 
-
+                <br></br>
                 {activeTab == 1 && <HomeComponent data={cities} country={country}/>}
-                
-                { 'forecast' in cityData ? JSON.stringify(cityData['forecast']['forecastday'][0]['day']) : "Select a city"}
                 <br></br>
                 <div style={{display : "inline-flex"}}>
-                <div id="vis"  style={{display: activeTab == 2 ? "block": "none"}}></div>
-                </div> 
+                <div id="vis"  style={{display: activeTab == 2 ? "block": "none", width: "70vw", height: "65vh"}}></div>
+                </div>
+                <br></br>
+                { 'forecast' in cityData  && 'forecastday' in cityData['forecast'] &&
+              'day' in cityData['forecast']['forecastday'][0] ?
+                Object.entries(cityData['forecast']['forecastday'][0]['day']).map(([k,v],_) =>{
+                  
+                    return  k == "air_quality" ? null : <Tag  >{k}:{ JSON.stringify(v)}</Tag>
+                }) : "Select a city"}
+                
+              { 'forecast' in cityData  && 'forecastday' in cityData['forecast'] &&
+              'day' in cityData['forecast']['forecastday'][0] && 'air_quality' in cityData['forecast']['forecastday'][0]['day']
+              ? 
+              Object.entries(cityData['forecast']['forecastday'][0]['day']['air_quality']).map(([k,v],_) =>{
+                  
+                  return  k == "air_quality" ? null : <Tag  >{k}:{ JSON.stringify(v)}</Tag>
+              }) : ""}
+                <br></br>
+                
                 { activeTab == 3 && 
                 <Table dataSource={data} onChange={onChangeTable} >
                   <Table.Column dataIndex={'city1'} title={'city1'} filterIcon filterSearch></Table.Column>
