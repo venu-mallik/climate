@@ -13,19 +13,21 @@ const isSSREnabled = () => typeof window === 'undefined';
 function runVegaPlotYearlySunHour(body){
 
   var vlSpec = {
+    title : {"text": "Vitamin-D availability and requirement", 
+  "subtitle" : " daytime : availability , vitd-fair/dark : percent daytime exposure needed in sunlight "},
     width: "container",
     height: "container",
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
     data: {
       values: body
     },
-    "repeat": { "layer": ['moonhour','sunhour','vitd-fair','vitd-dark']},
+    "repeat": { "layer": ['daytime','vitd-fair','vitd-dark']},
     "spec":{
     "mark": {"type":"point", "tooltip": true },
     "encoding": {
       "x": {"type": "temporal", "field": "time"},
       "y": { "field": {"repeat": "layer"}, "type": "quantitative" , 
-             "axis": {"values": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]}
+             "axis": {"values": [5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,100]}
           },
       "color": {"datum": {"repeat": "layer"}, "type": "nominal"}, 
     }
@@ -34,30 +36,54 @@ function runVegaPlotYearlySunHour(body){
   vegaEmbed('#vis', vlSpec);
 
   var vlSpec1 = {
-    width: 500,
-    height: 300,
+    title : {"text": "Sun and Moon above the horizon", 
+      "subtitle" : "Do we really know, how the moon presence above horizon and its gravity impact us? "},
+    width: 'container',
+    height: 'container',
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
     data: {
       values: body
     },
-
-    "mark": "area",
     "encoding": {
-      "x": {"type": "temporal", "field": "time"},
-      "y": {
-        "title": "Daily Sunrise",
-        "field": "sunriseh",
-        "type": "quantitative"  
+      "x": {"type": "temporal", "field": "time"}
+    },
+    "layer": [
+      { 
+        "mark": {"opacity": 0.5, "type": "area", "color": "orange"},
+            "encoding": { "y": {
+              "title": "Daily Sun above horizon",
+              "field": "sunrise",
+              "type": "temporal", 
+              "timeUnit": "hoursminutes"  
+            },
+            "y2": { 
+              "timeUnit": "hoursminutes"  ,
+              "field": "sunset" ,
+              "type": "temporal"
+            },
+          }
       },
-      "y2": { "field": "sunseth" ,
-      "type": "quantitative"},
-    }
+      {  
+        "mark": {"opacity": 0.5, "type": "area", "color": "blue"},
+        "encoding": {
+            "y": {
+              "title": "Daily Moon above horizon",
+              "field": "moonrise",
+              "type": "temporal", 
+              "timeUnit": "hoursminutes"  
+            },
+            "y2": { 
+              "timeUnit": "hoursminutes"  ,
+              "field": "moonset" ,
+              "type": "temporal"
+            },
+        }
+      }
+    ],
+    "resolve": {"scale": {"y": "independent"}}
   };
-
   // Embed the visualization in the container with id `vis`
-  //vegaEmbed('#vis1', vlSpec1); 
-
-
+  vegaEmbed('#vis1', vlSpec1); 
 
 }
 
@@ -158,7 +184,8 @@ export default function Home() {
                   'sunhour' : sh,
                   'moonhour' : mh,
                   "vitd-fair": UVBOOK[uvi]*100/sh,
-                  "vitd-dark":  UVBOOK[uvi]*100*2/sh
+                  "vitd-dark":  UVBOOK[uvi]*100*2/sh ,
+                  "daytime" : sh*100/24
               }
           )
       });
@@ -240,7 +267,8 @@ export default function Home() {
                 {activeTab == 1 && <HomeComponent data={cities} country={country}/>}
                 <br></br>
                 <div style={{display : "inline-flex"}}>
-                <div id="vis"  style={{display: activeTab == 2 ? "block": "none", width: "70vw", height: "65vh"}}></div>
+                <div id="vis"  style={{display: activeTab == 2 ? "block": "none", width: "50vw", height: "65vh"}}></div>
+                <div id="vis1"  style={{display: activeTab == 2 ? "block": "none", width: "50vw", height: "65vh"}}></div>
                 </div>
                 <br></br>
                 { 'forecast' in cityData  && 'forecastday' in cityData['forecast'] &&
