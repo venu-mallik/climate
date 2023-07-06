@@ -200,26 +200,16 @@ export default function Home() {
             !isSSREnabled() ?
             <>   
               <Layout>
-          <Layout.Header
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
             <div className="demo-logo" />
             <Menu theme="dark" mode="horizontal" defaultSelectedKeys={[activeTab]} 
             items={[
-              {key: 1, 'label': 'Home'},
-              {key: 2, 'label': 'Climate'},
-              {key: 3, 'label': 'Explorer'}
+              {key: 1, label: 'Home'},
+              {key: 2, label: 'Climate'},
+              {key: 3, label: 'Explorer'}
             ]}
               onClick={(e) => { setActiveTab(e.key) }} />
-          </Layout.Header>
           <Layout.Content>
 
-            {activeTab === 1 && <HomeComponent data={cities} country={country}/>}
-            
-            <br></br>
                 <Select style={{ width: 200 }} title={"Select the plot type"}
                   placeholder={'Plot type'} allowClear showSearch
                   value={plotType} onChange={(v) => {setPlotType(v); runPlot(selectedCity,data,v); }} >
@@ -254,15 +244,16 @@ export default function Home() {
                       return <Select.Option key={b}>{b}</Select.Option>
                     })}
                 </Select>
+
+
+                {activeTab == 1 && <HomeComponent data={cities} country={country}/>}
                 
-                { 'forecast' in cityData ? JSON.stringify(cityData['forecast']['forecastday'][0]['day']) : null}
+                { 'forecast' in cityData ? JSON.stringify(cityData['forecast']['forecastday'][0]['day']) : "Select a city"}
                 <br></br>
                 <div style={{display : "inline-flex"}}>
-                <div id="vis"></div>
-                </div>
-                <div style={{display : "inline-flex"}}>
-                <div id="vis1"></div>
-                </div>
+                <div id="vis"  style={{display: activeTab == 2 ? "block": "none"}}></div>
+                </div> 
+                { activeTab == 3 && 
                 <Table dataSource={data} onChange={onChangeTable} >
                   <Table.Column dataIndex={'city1'} title={'city1'} filterIcon filterSearch></Table.Column>
                   <Table.Column dataIndex={'city2'} title={'city2'} render={(v, _) => v} ></Table.Column>
@@ -273,7 +264,7 @@ export default function Home() {
                   <Table.Column dataIndex={'distance'} title={'distance'} render={(v, _) => v}
                     sorter={true} sortOrder='ascend' sortDirections={['ascend' | 'descend']} ></Table.Column>
 
-                </Table>
+                </Table> }
           
                 </Layout.Content>
                 </Layout>
