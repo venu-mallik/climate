@@ -210,15 +210,6 @@ export default function Home() {
               onClick={(e) => { setActiveTab(e.key) }} />
           <Layout.Content>
 
-                <Select style={{ width: 200 }} title={"Select the plot type"}
-                  placeholder={'Plot type'} allowClear showSearch
-                  value={plotType} onChange={(v) => {setPlotType(v); runPlot(selectedCity,data,v); }} >
-                  { 
-                   [{ type : "bubble"}, {type : "line"}, {type : "polygon"} ].map((b, _) => {
-                    return <Select.Option key={b.type} >{b.type}</Select.Option>
-                  })}
-                </Select>
-
                   <Select style={{ width: 300 }} title={"Select the country"}
                   placeholder={'Select Range/Top/Country'} allowClear showSearch
                   value={country} onChange={(v) => setCountry(v)} >
@@ -235,7 +226,7 @@ export default function Home() {
                     return <Select.Option key={b.name} value={JSON.stringify(b)} >{b.name}</Select.Option>
                   })}
                 </Select> 
-                <Select style={{ width: 100 }} placeholder={"Select population limit"} value={pop}
+                {/*<Select style={{ width: 100 }} placeholder={"Select population limit"} value={pop}
                 title={"Filter the cities by population limit"}
                   onChange={(v) => setPop(v)}>
                   {
@@ -243,7 +234,7 @@ export default function Home() {
                     3300000, 4000000, 5000000, 6600000, 8800000].map((b) => {
                       return <Select.Option key={b}>{b}</Select.Option>
                     })}
-                </Select>
+                </Select> */}
 
 
                 {activeTab == 1 && <HomeComponent data={cities} country={country}/>}
