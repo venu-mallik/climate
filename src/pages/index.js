@@ -54,10 +54,10 @@ function runVegaPlotYearlySunHour(body){
               "title": "Daily Sun above horizon",
               "field": "sunrise",
               "type": "temporal", 
-              "timeUnit": "hoursminutes"  
+              "timeUnit": "utchoursminutes"
             },
             "y2": { 
-              "timeUnit": "hoursminutes"  ,
+              "timeUnit": "utchoursminutes"  ,
               "field": "sunset" ,
               "type": "temporal"
             },
@@ -70,10 +70,10 @@ function runVegaPlotYearlySunHour(body){
               "title": "Daily Moon above horizon",
               "field": "moonrise",
               "type": "temporal", 
-              "timeUnit": "hoursminutes"  
+              "timeUnit": "utchoursminutes"
             },
             "y2": { 
-              "timeUnit": "hoursminutes"  ,
+              "timeUnit": "utchoursminutes"  ,
               "field": "moonset" ,
               "type": "temporal"
             },
