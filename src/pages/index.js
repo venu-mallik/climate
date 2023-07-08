@@ -175,7 +175,7 @@ export default function Home() {
       let dayend = spacetime(now.date).endOf('day');
       console.log(index, times[index], dayend);
       sunrise = sunrise === null ?  new AstroTime(now) : sunrise;
-      sunset = sunset === null ? new AstroTime( dayend ) : sunset;
+      sunset = sunset === null ? new AstroTime( now ) : sunset;
     }
     let moonrise = SearchRiseSet("Moon", obs, 1 , now, 1  )
     let moonset = SearchRiseSet("Moon", obs, -1 , moonrise ? moonrise : now, 1  )  
