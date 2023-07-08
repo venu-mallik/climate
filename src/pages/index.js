@@ -5,7 +5,7 @@ import vegaEmbed from 'vega-embed';
 import { countryList } from '@/components/countriesList';
 import { getDistanceFromLatLonInKm } from '@/components/utils';
 import { HomeComponent } from '@/components/home';
-
+import spacetime from 'spacetime';
 
 const isSSREnabled = () => typeof window === 'undefined';
 
@@ -114,7 +114,7 @@ export default function Home() {
   const [country,setCountry] = useState("India");
   const [cityData,setCityData] = useState({});
   const [riseData,setRiseData] = useState([]);
-  const [selectedCity, setselectedCity] = useState({name: "Vijayawada", lat: 16, lon: 80, elevation : 30 });
+  const [selectedCity, setselectedCity] = useState({name: "Vijayawada", lat: 16, lon: 80, elevation : 30, timezone: "Asia/Kolkata" });
   const [pop, setPop] = useState(500000);
 
   useEffect(()=>{
@@ -138,7 +138,6 @@ export default function Home() {
       let contain = []
       let activeCity = cities.filter((a) => a.name === selectedCity.name);
       activeCity = activeCity && "length" in activeCity ? activeCity[0] : cities[0];
-      console.log(activeCity, cities);
       let tcoor = { lat: activeCity.lat, lon: activeCity.lon }; 
       cities.map((rec) => {
         let d = getDistanceFromLatLonInKm(tcoor.lat, tcoor.lon, rec.lat, rec.lon);        
@@ -176,11 +175,19 @@ export default function Home() {
     let moonset = SearchRiseSet("Moon", obs, -1 , moonrise ? moonrise : now, 1  )  
     let sh = Number(Math.abs(sunset?.date.getTime() - sunrise?.date.getTime() )/36e5).toFixed(2);
     let mh = Number(Math.abs(moonset?.date.getTime() - moonrise?.date.getTime())/36e5).toFixed(2);
-      data.push(
+    sunrise = spacetime(sunrise?.date.toISOString()).goto(selectedCity.timezone).iso();
+    sunset = spacetime(sunset?.date.toISOString()).goto(selectedCity.timezone).iso();
+    sunrise = sunrise.charAt(23) === "Z" ? sunrise : sunrise.slice(0,-6) + "Z"
+    sunset = sunset.charAt(23) === "Z" ? sunset : sunset.slice(0,-6) + "Z"
+    moonrise = spacetime(moonrise?.date.toISOString()).goto(selectedCity.timezone).iso();
+    moonset = spacetime(moonset?.date.toISOString()).goto(selectedCity.timezone).iso();
+    moonrise = moonrise.charAt(23) === "Z" ? moonrise : moonrise.slice(0,-6) + "Z"
+    moonset = moonset.charAt(23) === "Z" ? moonset : moonset.slice(0,-6) + "Z"
+    data.push(
               { 
                 'time' : now,
-                'sunrise' : sunrise?.date, 'sunset' : sunset?.date ,
-                  'moonrise' : moonrise?.date, 'moonset' : moonset?.date,
+                'sunrise' : sunrise, 'sunset' : sunset ,
+                  'moonrise' : moonrise, 'moonset' : moonset,
                   'sunhour' : sh,
                   'moonhour' : mh,
                   "vitd-fair": UVBOOK[uvi]*100/sh,
