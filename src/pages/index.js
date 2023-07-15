@@ -4,6 +4,7 @@ import { countryList } from '@/components/countriesList';
 import { getDistanceFromLatLonInKm } from '@/components/utils';
 import { HomeComponent } from '@/components/home';
 import { ClimateComponent } from '@/components/climate';
+import { SoundComponent } from '@/components/mantras';
 
 const isSSREnabled = () => typeof window === 'undefined';
 
@@ -32,11 +33,8 @@ export default function Home() {
   const [data, setData] = useState([]);
   const [cities,setCities] = useState([]);
   const [country,setCountry] = useState("India");
-  const [cityData,setCityData] = useState({});
-  const [riseData,setRiseData] = useState([]);
   const [selectedCity, setselectedCity] = useState({name: "Vijayawada", lat: 16, lon: 80, elevation : 30, timezone: "Asia/Kolkata" });
-  const [pop, setPop] = useState(500000);
-
+  
   useEffect(()=>{
     const getCountryData = async () => {
       const resp = await fetch(`${apiURL}/api/country?country=${country}`);
@@ -54,25 +52,23 @@ export default function Home() {
   useEffect(() => {
 
     if (window && cities.length > 0) {
-      
       let contain = []
       let activeCity = cities.filter((a) => a.name === selectedCity.name);
       activeCity = activeCity && "length" in activeCity ? activeCity[0] : cities[0];
       let tcoor = { lat: activeCity.lat, lon: activeCity.lon }; 
       cities.map((rec) => {
-        let d = getDistanceFromLatLonInKm(tcoor.lat, tcoor.lon, rec.lat, rec.lon);        
-        if (rec.population > pop)
+        let d = getDistanceFromLatLonInKm(tcoor.lat, tcoor.lon, rec.lat, rec.lon);          
           contain.push({
             'city1': rec.name, 'pop1': rec.population, 'pop2': activeCity.population,
             'distance': Number(d).toFixed(2), 'city2': activeCity.name,
             'lat1': rec.lat, 'lon1': rec.lon 
-          })
-      })
+          });
       contain.sort((a,b) => a.distance - b.distance)
       setData(contain);
-    }
+    });
+  }
 
-  }, [ selectedCity])
+  },[ selectedCity])
 
   function onChangeTable(pagination, filters, sorter, extra) {
     let col = sorter.field;
@@ -106,7 +102,8 @@ export default function Home() {
             items={[
               {key: 1, label: 'Home'},
               {key: 2, label: 'Climate'},
-              {key: 3, label: 'Explorer'}
+              {key: 3, label: 'Distances'},
+              {key: 4, label: 'Music & Frequency'}
             ]}
               onClick={(e) => { setActiveTab(e.key) }} />
           <Layout.Content>
@@ -140,7 +137,8 @@ export default function Home() {
                 <br></br>
                 {activeTab == 1 && <HomeComponent data={cities} country={country}/>}
                 {activeTab == 2 && <ClimateComponent data={cities} country={country} selectedCity={selectedCity}/>}
-                
+                {activeTab == 4 && <SoundComponent /> }
+
                 { activeTab == 3 && 
                 <Table dataSource={data} onChange={onChangeTable} >
                   <Table.Column dataIndex={'city1'} title={'city1'} filterIcon filterSearch></Table.Column>
