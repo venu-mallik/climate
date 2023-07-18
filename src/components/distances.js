@@ -1,9 +1,25 @@
 import { useEffect, useState } from "react";
 import { getDistanceFromLatLonInKm } from "./utils";
-import { Button, Card, Select, Table } from "antd";
+import { Button, Card, Select, Table, InputNumber } from "antd";
 import vegaEmbed from 'vega-embed';
-
 var map;
+var map1;
+function runProximity(from, radius){
+    let divvisible = document.getElementById("map1");
+    if (map1 && "off" in map1 && divvisible !== undefined) {
+        map1 = map1.off();
+        map1 = map1.remove();
+    }
+    map1 = L.map('map1', {
+        center: [from.lat, from.lon],
+        zoom: 10
+    });
+    L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+        maxZoom: 15
+    }).addTo(map1);
+    L.circle([from.lat,from.lon], {radius: radius }).addTo(map1);
+}
+
 function runPlot(from, data, type) {
 
     let slice = { "bubble": undefined, "line": 15, "polygon": 10 };
@@ -115,6 +131,11 @@ export const DistanceComponent = (props) => {
     const [pop, setPop] = useState(0);
     const [selectedCities, setSelectedCities] = useState([]);
     const [data,setData] = useState([]);
+    const [rad, setRad] = useState(20000);
+
+    useEffect(()=>{
+        runProximity(props.selectedCity,rad);
+    },[rad, props.selectedCity]);
 
     useEffect(() => {
 
@@ -170,7 +191,6 @@ export const DistanceComponent = (props) => {
     return (
         <>
 
-            
             <Select style={{width:500}} title={""}
                 placeholder={'Select Cities to plot, Try Top250 in country dropdown'} allowClear showSearch
                 mode="tags"
@@ -182,6 +202,15 @@ export const DistanceComponent = (props) => {
                 })}
             </Select>
             <Button onClick={()=> setPop(1)} >Submit</Button>
+            
+            <Card title={
+            <InputNumber addonBefore={`Proximity from ${props.selectedCity.name} with radius`} 
+            addonAfter={"mtrs"} placeholder={"Select radius for map1"} value={rad} onChange={(v)=>setRad(v)}
+            step={500} min={1000} max={50000} 
+            ></InputNumber>}>
+            
+            <div id="map1" style={{ height: '60vh', width: '70vw' }} ></div>
+            </Card>
             
             <Card>
             <div id="map" style={{ height: '60vh', width: '70vw' }} ></div>
