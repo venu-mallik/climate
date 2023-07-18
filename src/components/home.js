@@ -149,8 +149,6 @@ export const HomeComponent = (props) => {
             </Space>
             <div id="map" style={{ height: '60vh', width: '70vw' }} ></div>
             </Card>
-            
-
             <Card >
             <div id="vishome" style={{ height: '60vh', width: '70vw' }}></div>
             </Card>

@@ -4,6 +4,7 @@ import { countryList } from '@/components/countriesList';
 import { getDistanceFromLatLonInKm } from '@/components/utils';
 import { HomeComponent } from '@/components/home';
 import { ClimateComponent } from '@/components/climate';
+import { DistanceComponent } from '@/components/distances';
 import { SoundComponent } from '@/components/mantras';
 
 const isSSREnabled = () => typeof window === 'undefined';
@@ -47,34 +48,6 @@ export default function Home() {
   getCountryData();
 
   },[country])
-
-
-  useEffect(() => {
-
-    if (window && cities.length > 0) {
-      let contain = []
-      let activeCity = cities.filter((a) => a.name === selectedCity.name);
-      activeCity = activeCity && "length" in activeCity ? activeCity[0] : cities[0];
-      let tcoor = { lat: activeCity.lat, lon: activeCity.lon }; 
-      cities.map((rec) => {
-        let d = getDistanceFromLatLonInKm(tcoor.lat, tcoor.lon, rec.lat, rec.lon);          
-          contain.push({
-            'city1': rec.name, 'pop1': rec.population, 'pop2': activeCity.population,
-            'distance': Number(d).toFixed(2), 'city2': activeCity.name,
-            'lat1': rec.lat, 'lon1': rec.lon 
-          });
-      contain.sort((a,b) => a.distance - b.distance)
-      setData(contain);
-    });
-  }
-
-  },[ selectedCity])
-
-  function onChangeTable(pagination, filters, sorter, extra) {
-    let col = sorter.field;
-    let dat = data.sort((a, b) => a[col] - b[col])
-    setData(dat);
-  }
 
   useEffect(()=>{
 
@@ -140,17 +113,7 @@ export default function Home() {
                 {activeTab == 4 && <SoundComponent /> }
 
                 { activeTab == 3 && 
-                <Table dataSource={data} onChange={onChangeTable} >
-                  <Table.Column dataIndex={'city1'} title={'city1'} filterIcon filterSearch></Table.Column>
-                  <Table.Column dataIndex={'city2'} title={'city2'} render={(v, _) => v} ></Table.Column>
-                  <Table.Column dataIndex={'pop1'} title={'pop1'} render={(v, _) => v}
-                    sorter={true} sortDirections={['ascend' | 'descend']} showSorterTooltip sortOrder='descend'></Table.Column>
-                  <Table.Column dataIndex={'pop2'} title={'pop2'} render={(v, _) => v}   ></Table.Column>
-
-                  <Table.Column dataIndex={'distance'} title={'distance'} render={(v, _) => v}
-                    sorter={true} sortOrder='ascend' sortDirections={['ascend' | 'descend']} ></Table.Column>
-
-                </Table> }
+                  <DistanceComponent data={cities} country={country} selectedCity={selectedCity}/> }
           
                 </Layout.Content>
                 </Layout>
