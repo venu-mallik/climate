@@ -153,7 +153,7 @@ export const ClimateComponent = (props) => {
     
     return (
         <>
-        <Card style={props.css.card}>
+        <Card className="cardsize">
 
         { 'forecast' in cityData  && 'forecastday' in cityData['forecast'] &&
       'day' in cityData['forecast']['forecastday'][0] ?
@@ -173,7 +173,7 @@ export const ClimateComponent = (props) => {
         <br></br>
         <div id="vis"  style={{ width: "75vw", height: "65vh"}}></div>
         </Card>
-        <Card style={props.css.card}>
+        <Card className="cardsize">
         <div id="vis1"  style={{width: "75vw", height: "65vh"}}></div>
         </Card>
         <br></br>

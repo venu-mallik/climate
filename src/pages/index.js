@@ -33,12 +33,8 @@ export default function Home() {
   const [country,setCountry] = useState("India");
   const [selectedCity, setselectedCity] = useState({name: "Vijayawada", lat: 16, lon: 80, elevation : 30, timezone: "Asia/Kolkata" });
 
-  const [css,setCss] = useState({ card : { width : "75vw"}})
 
   useEffect(()=>{
-    if(window.innerWidth.toFixed(0) < 600){
-      setCss( { card : { width : "100vw"}});
-    }
 
     const getCountryData = async () => {
       const resp = await fetch(`${apiURL}/api/country?country=${country}`);
@@ -139,8 +135,8 @@ export default function Home() {
                 </Select> */}
 
                 <br></br>
-                {activeTab == 1 && <HomeComponent data={cities} country={country}  css={css} />}
-                {activeTab == 2 && <ClimateComponent data={cities} country={country} selectedCity={selectedCity} css={css}/>}
+                {activeTab == 1 && <HomeComponent data={cities} country={country}   />}
+                {activeTab == 2 && <ClimateComponent data={cities} country={country} selectedCity={selectedCity} />}
                 {activeTab == 4 && <SoundComponent /> }
 
                 { activeTab == 3 && 
