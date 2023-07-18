@@ -14,8 +14,9 @@ function runProximity(from, radius){
         center: [from.lat, from.lon],
         zoom: 10
     });
-    L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-        maxZoom: 15
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 15,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map1);
     L.circle([from.lat,from.lon], {radius: radius }).addTo(map1);
 }
