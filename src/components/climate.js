@@ -1,5 +1,5 @@
 import {  SearchRiseSet, Observer, AstroTime  }  from 'astronomy-engine';
-import { Tag } from 'antd';
+import { Tag, Card, Space } from 'antd';
 import vegaEmbed from 'vega-embed';
 import { useCallback, useEffect, useState } from 'react';
 import spacetime from 'spacetime';
@@ -153,9 +153,8 @@ export const ClimateComponent = (props) => {
     
     return (
         <div >
-        <div id="vis"  style={{ width: "80vw", height: "50vh"}}></div>
-        <div id="vis1"  style={{width: "80vw", height: "50vh"}}></div>
-        <br></br>
+        <Card>
+
         { 'forecast' in cityData  && 'forecastday' in cityData['forecast'] &&
       'day' in cityData['forecast']['forecastday'][0] ?
         Object.entries(cityData['forecast']['forecastday'][0]['day']).map(([k,v],_) =>{
@@ -170,6 +169,13 @@ export const ClimateComponent = (props) => {
           
           return  k == "air_quality" ? null : <Tag  >{k}:{ JSON.stringify(v)}</Tag>
       }) : ""}
+        <br></br>
+        <br></br>
+        <div id="vis"  style={{ width: "80vw", height: "50vh"}}></div>
+        </Card>
+        <Card>
+        <div id="vis1"  style={{width: "80vw", height: "50vh"}}></div>
+        </Card>
         <br></br>
         </div>
     )

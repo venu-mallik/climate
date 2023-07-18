@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getDistanceFromLatLonInKm } from "./utils";
-import { Statistic, Typography, Space } from "antd";
+import { Statistic, Typography, Space, Card } from "antd";
 import vegaEmbed from 'vega-embed';
 
 var map;
@@ -138,19 +138,22 @@ export const HomeComponent = (props) => {
 
     return (
         <>
+
+            <Card title={props.country}>
             <Space direction="horizontal" >
-                <Typography.Title role="contentinfo">{props.country}</Typography.Title>
-                <Statistic value={pop} title="Population Included"></Statistic>
-                <Statistic value={"length" in props.data ? props.data.length : 0} title="No of Areas included" ></Statistic>
-                <Statistic value={filterPop(1000000)} title="Million+ Areas"></Statistic>
-                <Statistic value={filterPop(500000)} title="Half Million+ Areas"></Statistic>
-                <Statistic value={filterPop(100000)} title="100 thousand+ Areas"></Statistic>
+                <Statistic value={pop} title="Population"></Statistic>
+                <Statistic value={"length" in props.data ? props.data.length : 0} title="Areas" ></Statistic>
+                <Statistic value={filterPop(1000000)} title="1000k+"></Statistic>
+                <Statistic value={filterPop(500000)} title="500k+"></Statistic>
+                <Statistic value={filterPop(100000)} title="100k+"></Statistic>
             </Space>
-            <br></br>
-            <div id="vishome" style={{ height: '75vh', width: '100vw' }}></div>
-            <div id="map" style={{ height: '60vh', width: '100vw' }} ></div>
+            <div id="map" style={{ height: '60vh', width: '80vw' }} ></div>
+            </Card>
+            
 
-
+            <Card>
+            <div id="vishome" style={{ height: '0vh', width: '0vw' }}></div>
+            </Card>
         </>
     )
 }
