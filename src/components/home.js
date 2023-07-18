@@ -139,7 +139,7 @@ export const HomeComponent = (props) => {
     return (
         <>
 
-            <Card title={props.country}  className="cardsize" >
+            <Card title={props.country}   >
             <Space direction="horizontal" >
                 <Statistic value={pop} title="Population"></Statistic>
                 <Statistic value={"length" in props.data ? props.data.length : 0} title="Areas" ></Statistic>
@@ -151,7 +151,7 @@ export const HomeComponent = (props) => {
             </Card>
             
 
-            <Card className="cardsize">
+            <Card >
             <div id="vishome" style={{ height: '60vh', width: '70vw' }}></div>
             </Card>
         </>
