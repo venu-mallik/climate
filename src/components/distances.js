@@ -191,7 +191,16 @@ export const DistanceComponent = (props) => {
 
     return (
         <>
-
+            <Card title={
+            <InputNumber addonBefore={`Circle from ${props.selectedCity.name}`} 
+            addonAfter={"mtrs radius"} placeholder={"Select radius for map1"} value={rad} onChange={(v)=>setRad(v)}
+            step={500} min={1000} max={50000} style={{width:500}}
+            ></InputNumber>}>
+            
+            <div id="map1" style={{ height: '60vh', width: '95vw' }} ></div>
+            </Card>
+            
+            <Card title={<>
             <Select style={{width:500}} title={""}
                 placeholder={'Select Cities to plot, Try Top250 in country dropdown'} allowClear showSearch
                 mode="tags"
@@ -203,17 +212,7 @@ export const DistanceComponent = (props) => {
                 })}
             </Select>
             <Button onClick={()=> setPop(1)} >Submit</Button>
-            
-            <Card title={
-            <InputNumber addonBefore={`Proximity from ${props.selectedCity.name} with radius`} 
-            addonAfter={"mtrs"} placeholder={"Select radius for map1"} value={rad} onChange={(v)=>setRad(v)}
-            step={500} min={1000} max={50000} 
-            ></InputNumber>}>
-            
-            <div id="map1" style={{ height: '60vh', width: '95vw' }} ></div>
-            </Card>
-            
-            <Card>
+            </>}>
             <div id="map" style={{ height: '60vh', width: '95vw' }} ></div>
             </Card>
             
