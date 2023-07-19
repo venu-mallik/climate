@@ -147,10 +147,10 @@ export const HomeComponent = (props) => {
                 <Statistic value={filterPop(500000)} title="500k+"></Statistic>
                 <Statistic value={filterPop(100000)} title="100k+"></Statistic>
             </Space>
-            <div id="map" style={{ height: '60vh', width: '70vw' }} ></div>
+            <div id="map" style={{ height: '60vh', width: '95vw' }} ></div>
             </Card>
             <Card >
-            <div id="vishome" style={{ height: '60vh', width: '70vw' }}></div>
+            <div id="vishome" style={{ height: '60vh', width: '95vw' }}></div>
             </Card>
         </>
     )

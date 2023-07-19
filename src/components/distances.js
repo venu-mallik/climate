@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { getDistanceFromLatLonInKm } from "./utils";
 import { Button, Card, Select, Table, InputNumber } from "antd";
 import vegaEmbed from 'vega-embed';
@@ -14,9 +14,9 @@ function runProximity(from, radius){
         center: [from.lat, from.lon],
         zoom: 10
     });
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 15,
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
     }).addTo(map1);
     L.circle([from.lat,from.lon], {radius: radius }).addTo(map1);
 }
@@ -134,7 +134,7 @@ export const DistanceComponent = (props) => {
     const [data,setData] = useState([]);
     const [rad, setRad] = useState(20000);
 
-    useEffect(()=>{
+    useLayoutEffect(()=>{
         runProximity(props.selectedCity,rad);
     },[rad, props.selectedCity]);
 
@@ -177,7 +177,7 @@ export const DistanceComponent = (props) => {
         if (contain.length > 2 && pop > 0){
             setPop(0);
             setData(contain);
-            vegaDistanceGeo(contain);
+            //vegaDistanceGeo(contain);
             runPlot(props.selectedCity, contain, "line")
         }
     }, [pop])
@@ -210,17 +210,17 @@ export const DistanceComponent = (props) => {
             step={500} min={1000} max={50000} 
             ></InputNumber>}>
             
-            <div id="map1" style={{ height: '60vh', width: '70vw' }} ></div>
+            <div id="map1" style={{ height: '60vh', width: '95vw' }} ></div>
             </Card>
             
             <Card>
-            <div id="map" style={{ height: '60vh', width: '70vw' }} ></div>
+            <div id="map" style={{ height: '60vh', width: '95vw' }} ></div>
             </Card>
             
 
-            <Card title={props.country}   >
-                <div id="visdiscomp" style={{ height: '60vh', width: '70vw' }}></div>
-            </Card>
+            {/*<Card title={props.country}   >
+                <div id="visdiscomp" style={{ height: '60vh', width: '95vw' }}></div>
+            </Card>*/}
             <Table dataSource={data} onChange={onChangeTable} >
                   <Table.Column dataIndex={'city1'} title={'city1'} filterIcon filterSearch></Table.Column>
                   <Table.Column dataIndex={'city2'} title={'city2'} render={(v, _) => v} ></Table.Column>

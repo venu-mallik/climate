@@ -171,10 +171,10 @@ export const ClimateComponent = (props) => {
       }) : ""}
         <br></br>
         <br></br>
-        <div id="vis"  style={{ width: "75vw", height: "65vh"}}></div>
+        <div id="vis"  style={{ width: "95vw", height: "65vh"}}></div>
         </Card>
         <Card >
-        <div id="vis1"  style={{width: "75vw", height: "65vh"}}></div>
+        <div id="vis1"  style={{width: "95vw", height: "65vh"}}></div>
         </Card>
         <br></br>
         </>
