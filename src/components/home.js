@@ -7,7 +7,7 @@ var map;
 
 function runPlot(from, data, type) {
 
-    let slice = { "bubble": undefined, "line": 15, "polygon": 10 };
+    let slice = { "bubble": 100, "line": 15, "polygon": 10 };
     let divvisible = document.getElementById("map");
     if (map && "off" in map && divvisible !== undefined) {
         map = map.off();
@@ -39,14 +39,14 @@ function runPlot(from, data, type) {
         }
 
         if (["bubble"].includes(type)) {
-            L.circle([b.lat1, b.lon1]
+            L.circle([b.lat, b.lon]
                 , {
                     color: 'red',
                     fillColor: '#f03',
-                    fillOpacity: 1 / (b.pop1),
-                    radius: 0.0005 * b.pop1
+                    fillOpacity: 1 / (b.population),
+                    radius: 0.0005 * b.population
                 }).addTo(map).bindPopup(
-                    `${b.city1}-${Number(b.pop1).toFixed(0)}`).openPopup();
+                    `${b.name}-${Number(b.population).toFixed(0)}`).openPopup();
         }
     });
 }
@@ -100,6 +100,17 @@ export const HomeComponent = (props) => {
 
     const [pop, setPop] = useState(0);
 
+
+    useEffect(() => {
+
+        let cities = props.data;
+        if (window && cities.length > 0 ) {
+            vegaGeo(cities)
+            runPlot(cities[0], cities, 'bubble');
+        }
+
+    }, [props.data])
+
     useEffect(() => {
 
         let p = props.data.reduce((a, b) => +a + +b.population, 0);
@@ -111,30 +122,6 @@ export const HomeComponent = (props) => {
         return p ? p.length : 0;
     }
 
-
-    useEffect(() => {
-
-        let cities = props.data;
-        if (window && cities.length > 0 && pop > 0) {
-            vegaGeo(cities)
-            let contain = []
-            let activeCity = cities[0];
-            let tcoor = { lat: activeCity.lat, lon: activeCity.lon };
-            let avg = pop / cities.length;
-            cities.map((rec) => {
-                let d = getDistanceFromLatLonInKm(tcoor.lat, tcoor.lon, rec.lat, rec.lon);
-                if (rec.population > avg)
-                    contain.push({
-                        'city1': rec.name, 'pop1': rec.population, 'pop2': activeCity.population,
-                        'distance': Number(d).toFixed(2), 'city2': activeCity.name,
-                        'lat1': rec.lat, 'lon1': rec.lon
-                    })
-            })
-            contain.sort((a, b) => a.distance - b.distance)
-            runPlot(cities[0], contain, 'bubble');
-        }
-
-    }, [props.data, pop])
 
     return (
         <>
