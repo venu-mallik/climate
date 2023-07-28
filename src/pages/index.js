@@ -2,7 +2,7 @@ import { useCallback, useMemo, useEffect, useState } from 'react';
 import { Col, Row, Select, Layout, Table, Menu, Tag, InputNumber, Tooltip } from 'antd';
 import { countryList } from '@/components/countriesList';
 import { apiURL } from '@/components/utils';
-import { HomeComponent } from '@/components/home';
+import { MagneticComponent } from '@/components/magnetic';
 import { ClimateComponent } from '@/components/climate';
 import { DistanceComponent } from '@/components/distances';
 import { SoundComponent } from '@/components/mantras';
@@ -72,7 +72,7 @@ export default function Home() {
             <div className="demo-logo" />
             <Menu theme="dark" mode="horizontal" defaultSelectedKeys={[activeTab]} 
             items={[
-              {key: 2, label: 'Home'},
+              {key: 2, label: 'Magnetic'},
               {key: 1, label: 'Climate'},
               {key: 3, label: 'Distances'},
               {key: 4, label: 'Music & Frequency'}
@@ -107,7 +107,7 @@ export default function Home() {
                 </Select> */}
 
                 <br></br>
-                {activeTab == 2 && <HomeComponent data={cities} country={country}   />}
+                {activeTab == 2 && <MagneticComponent data={cities} country={country}   />}
                 {activeTab == 1 && <ClimateComponent data={cities} country={country} selectedCity={selectedCity} />}
                 {activeTab == 4 && <SoundComponent /> }
 

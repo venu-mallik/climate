@@ -202,7 +202,7 @@ export const DistanceComponent = (props) => {
             
             <Card title={<>
             <Select style={{width:500}} title={""}
-                placeholder={'Select Cities to plot, Try Top250 in country dropdown'} allowClear showSearch
+                placeholder={'Select Cities to plot'} allowClear showSearch
                 mode="tags"
                 value={selectedCities}
                 onChange={(v) => { setSelectedCities(v); }} 

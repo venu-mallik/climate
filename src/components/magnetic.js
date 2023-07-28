@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { getDistanceFromLatLonInKm } from "./utils";
-import { Statistic, Typography, Space, Card } from "antd";
+import { Statistic, Typography, Space, Card, Table, Select, Button } from "antd";
 import vegaEmbed from 'vega-embed';
+import { model} from 'geomagnetism';
 
 var map;
 
@@ -44,9 +44,9 @@ function runPlot(from, data, type) {
                     color: 'red',
                     fillColor: '#f03',
                     fillOpacity: 1 / (b.population),
-                    radius: 0.0005 * b.population
+                    radius:  b.f ? b.f * 0.0001 : 0.1
                 }).addTo(map).bindPopup(
-                    `${b.name}-${Number(b.population).toFixed(0)}`).openPopup();
+                    `${b.name}-${Number(b.population).toFixed(0)}-${Number(b.f).toFixed(0)} nT`).openPopup();
         }
     });
 }
@@ -96,15 +96,23 @@ function vegaGeo(data) {
 
 }
 
-export const HomeComponent = (props) => {
+export const MagneticComponent = (props) => {
 
     const [pop, setPop] = useState(0);
-
+    const [data,setData] = useState([])
+    const [selectedCities, setSelectedCities] = useState([]);
 
     useEffect(() => {
 
         let cities = props.data;
         if (window && cities.length > 0 ) {
+            let p = []
+            cities.map((r,i)=>{
+                let m = model(new Date()).point([r.lat,r.lon]);
+                p.push( { ...r ,  ...m} )
+            })
+            setData(p);
+            cities = p ;
             vegaGeo(cities)
             runPlot(cities[0], cities, 'bubble');
         }
@@ -138,6 +146,22 @@ export const HomeComponent = (props) => {
             </Card>
             <Card >
             <div id="vishome" style={{ height: '60vh', width: '95vw' }}></div>
+            </Card>
+            <Card title={<>
+            <Select style={{width:500}} title={""}
+                placeholder={'Select Cities to filter'} allowClear showSearch
+                mode="tags"
+                value={selectedCities}
+                onChange={(v) => { setSelectedCities(v); }} 
+                >
+                {props.data.map((b, _) => {
+                    return <Select.Option key={b.name} value={b.name} >{b.name}</Select.Option>
+                })}
+            </Select>
+            <Button onClick={()=> setPop(1)} >Submit</Button>
+            </>}>
+
+                <Table dataSource={data.filter(a=> selectedCities.length === 0 || selectedCities.includes(a.name) )} columns={ data.length > 0?  Object.keys(data[0]).map((a,i)=>  ({'title': a, 'dataIndex':a, 'key': a}) ) : []}></Table>
             </Card>
         </>
     )
