@@ -86,8 +86,45 @@ function vegaGeo(data) {
         ]
 
     }
+    let specEle = {
+        "width": "container",
+        "height": "container",
+        "projection": {
+            "type": "equirectangular"
+        },
+        "layer": [
+            {
+                "data": {
+                    "name": "world",
+                    "url": "https://vega.github.io/vega-lite/data/world-110m.json",
+                    "format": { "type": "topojson", "feature": "countries" }
+                },
+                "mark": { "type": "geoshape", "fill": "white", "stroke": "black" }
+            },
+            {
+                "data": { "values": data.filter(a => a.elevation >= 0) },
+                "mark": { "type": "circle", "color": "red" },
+                "encoding": {
+                    "longitude": { "field": "lon", "type": "quantitative" },
+                    "latitude": { "field": "lat", "type": "quantitative" },
+                    "size": {"value": 5},
+                    "color": {"field": "elevation", "type" : "ordinal"},
+                    "tooltip": [{ "field": "name" }, { "field": "population", "type": "quantitative" }]
+                },
+                "config": {
+                    "view": {
+                        "stroke": "transparent"
+                    }
+                }
+            }
+
+        ]
+
+    }
+
 
     vegaEmbed('#vishome', spec);
+    vegaEmbed('#visele', specEle)
 
 
 }
@@ -142,6 +179,9 @@ export const MagneticComponent = (props) => {
             </Card>
             <Card title={"Magnetic total intensity at each city using WMM"}>
             <div id="vishome" style={{ height: '60vh', width: '95vw' }}></div>
+            </Card>
+            <Card title={"elevation Plot of the areas"}>
+            <div id="visele" style={{ height: '60vh', width: '95vw' }}></div>
             </Card>
             <Card title={<>
             <Select style={{width:500}} title={""}
