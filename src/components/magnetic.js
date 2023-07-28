@@ -68,16 +68,12 @@ function vegaGeo(data) {
                 "mark": { "type": "geoshape", "fill": "white", "stroke": "black" }
             },
             {
-                "data": { "values": data.slice(0, 50) },
+                "data": { "values": data },
                 "mark": { "type": "circle", "color": "red" },
                 "encoding": {
                     "longitude": { "field": "lon", "type": "quantitative" },
                     "latitude": { "field": "lat", "type": "quantitative" },
-                    "size": {
-                        "legend": null,
-                        "field": "population",
-                        "type": "quantitative"
-                    },
+                    "color": {"field": "f", "bin": {"binned": true, "maxbins": 10 }},
                     "tooltip": [{ "field": "name" }, { "field": "population", "type": "quantitative" }]
                 },
                 "config": {
@@ -144,7 +140,7 @@ export const MagneticComponent = (props) => {
             </Space>
             <div id="map" style={{ height: '60vh', width: '95vw' }} ></div>
             </Card>
-            <Card >
+            <Card title={"Magnetic total intensity at each city using WMM"}>
             <div id="vishome" style={{ height: '60vh', width: '95vw' }}></div>
             </Card>
             <Card title={<>
