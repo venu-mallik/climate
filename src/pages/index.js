@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useEffect, useState } from 'react';
 import { Col, Row, Select, Layout, Table, Menu, Tag, InputNumber, Tooltip } from 'antd';
 import { countryList } from '@/components/countriesList';
-import { getDistanceFromLatLonInKm } from '@/components/utils';
+import { apiURL } from '@/components/utils';
 import { HomeComponent } from '@/components/home';
 import { ClimateComponent } from '@/components/climate';
 import { DistanceComponent } from '@/components/distances';
 import { SoundComponent } from '@/components/mantras';
+
+const topoapiKey = "7ff2ac7dc86df81348678acb072ce0c0";
 
 const isSSREnabled = () => typeof window === 'undefined';
 
@@ -26,10 +28,7 @@ const presets = getPresets();
 
 export default function Home() {
 
-  const apiURL = "https://citygrid.vrworkers.workers.dev";
   const [activeTab,setActiveTab] = useState(1);
-  const [plotType,setPlotType] = useState("bubble");
-  const [data, setData] = useState([]);
   const [cities,setCities] = useState([]);
   const [country,setCountry] = useState("India");
   const [selectedCity, setselectedCity] = useState({name: "Vijayawada", lat: 16, lon: 80, elevation : 30, timezone: "Asia/Kolkata" });
@@ -73,8 +72,8 @@ export default function Home() {
             <div className="demo-logo" />
             <Menu theme="dark" mode="horizontal" defaultSelectedKeys={[activeTab]} 
             items={[
-              {key: 1, label: 'Home'},
-              {key: 2, label: 'Climate'},
+              {key: 2, label: 'Home'},
+              {key: 1, label: 'Climate'},
               {key: 3, label: 'Distances'},
               {key: 4, label: 'Music & Frequency'}
             ]}
@@ -108,8 +107,8 @@ export default function Home() {
                 </Select> */}
 
                 <br></br>
-                {activeTab == 1 && <HomeComponent data={cities} country={country}   />}
-                {activeTab == 2 && <ClimateComponent data={cities} country={country} selectedCity={selectedCity} />}
+                {activeTab == 2 && <HomeComponent data={cities} country={country}   />}
+                {activeTab == 1 && <ClimateComponent data={cities} country={country} selectedCity={selectedCity} />}
                 {activeTab == 4 && <SoundComponent /> }
 
                 { activeTab == 3 && 

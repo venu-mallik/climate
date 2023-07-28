@@ -3,21 +3,26 @@ import { Tag, Card, Space } from 'antd';
 import vegaEmbed from 'vega-embed';
 import { useCallback, useEffect, useState } from 'react';
 import spacetime from 'spacetime';
+import { apiURL } from './utils';
+import { model} from 'geomagnetism';
+
 
 const UVBOOK = { 1 : 0, 2 : 0 , 3 : 1.2, 4 : 1.2, 5 : 1.2, 6: 0.75, 7 : 0.75, 8 : 0.5, 9: 0.5 , 10 : 0.3 , 11: 0.3}
 
 function runVegaPlotYearlySunHour(body){
 
     var vlSpec = {
-      title : {"text": "Vitamin-D availability and requirement", 
-    "subtitle" : " daytime : availability , vitd-fair/dark : percent daytime exposure needed in sunlight "},
+      title : {"text": "Vitamin-D availability and requirement, Magnetic values", 
+    "subtitle" : " daytime : availability , vitd-fair/dark : percent daytime exposure needed in sunlight"},
       width: "container",
       height: "container",
       $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
       data: {
         values: body
       },
-      "repeat": { "layer": ['daytime','vitd-fair','vitd-dark']},
+      "transform" : [{"calculate" : "datum.f*0.001" , "as" : "total-intensity"},
+      {"calculate" : "datum.h*0.001" , "as" : "horizontal-intensity"}],
+      "repeat": { "layer": ['daytime','vitd-fair','vitd-dark', 'total-intensity', 'horizontal-intensity', 'incl', 'decl']},
       "spec":{
       "mark": {"type":"point", "tooltip": true },
       "encoding": {
@@ -85,8 +90,8 @@ function runVegaPlotYearlySunHour(body){
   
 export const ClimateComponent = (props) => {
 
-    const apiURL = "https://citygrid.vrworkers.workers.dev";
     const [cityData,setCityData] = useState({});
+    const [mag,setMag] = useState([]);
 
     const getClimate = useCallback(async ()=>{
         
@@ -123,6 +128,9 @@ export const ClimateComponent = (props) => {
           sunrise = sunrise === null ?  new AstroTime(now) : sunrise;
           sunset = sunset === null ? new AstroTime( now ) : sunset;
         }
+
+        const maginfo = model(now.date).point([props.selectedCity.lat, props.selectedCity.lon]);
+
         let moonrise = SearchRiseSet("Moon", obs, 1 , now, 1  )
         let moonset = SearchRiseSet("Moon", obs, -1 , moonrise ? moonrise : now, 1  )  
         let sh = Number(Math.abs(sunset?.date.getTime() - sunrise?.date.getTime() )/36e5).toFixed(2);
@@ -144,7 +152,8 @@ export const ClimateComponent = (props) => {
                       'moonhour' : mh,
                       "vitd-fair": UVBOOK[uvi]*100/sh,
                       "vitd-dark":  UVBOOK[uvi]*100*2/sh ,
-                      "daytime" : sh*100/24
+                      "daytime" : sh*100/24 ,
+                      ...maginfo
                   }
               )
           });
@@ -154,7 +163,7 @@ export const ClimateComponent = (props) => {
     return (
         <>
         <Card >
-
+        
         { 'forecast' in cityData  && 'forecastday' in cityData['forecast'] &&
       'day' in cityData['forecast']['forecastday'][0] ?
         Object.entries(cityData['forecast']['forecastday'][0]['day']).map(([k,v],_) =>{

@@ -1,3 +1,6 @@
+
+export const apiURL = "https://citygrid.vrworkers.workers.dev";
+
 function deg2rad(deg) {
     return deg * (Math.PI/180)
   }
