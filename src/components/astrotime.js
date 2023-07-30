@@ -79,7 +79,7 @@ export function TimeScales(props) {
     const [times, setTimes] = useState([]);
     const [saveData, setSaveData] = useState([]);
     const [mode, setMode] = useState("EarthQuake");
-    const modes = ['EarthQuake'];
+    const modes = ['EarthQuake',"Browse"];
 
     const [transform, setTransform] = useState("degree");
     const transforms = ["degree", "d1", "d9", "star","exal", "debil", "vargottama"]
@@ -92,8 +92,9 @@ export function TimeScales(props) {
     useEffect(() => {
 
         years.map((y, i) => {
-
-            let start = new AstroTime(new Date(`2000-01-01T00:00:00.000+05:30`).setFullYear(y));
+            let d = new Date(`2000-01-01T00:00:00.000+05:30`);
+            d.setFullYear(y);
+            let start = new AstroTime(new Date(d));
             let arr = []
             Array(366).fill().map((_, index) => {
                 arr.push(start.AddDays(index))
@@ -139,29 +140,19 @@ export function TimeScales(props) {
                 })}
             </Select>
 
-            <Select style={{ width: 200 }} title={""}
-                placeholder={'Select'} allowClear showSearch
-                value={transform}
-                onChange={(v) => { setTransform(v); }}
-            >
-                {transforms.map((b, i) => {
-                    return <Select.Option key={b} value={b} >{b}</Select.Option>
-                })}
-            </Select>
-
-
-
+            { mode === "Browse" &&
             <Select style={{ width: 500 }} title={""}
                 placeholder={'Select Years'} allowClear showSearch
                 mode="tags"
                 value={years}
-                onChange={(v) => { setYears(v); }}
+                onChange={(v) => {  setYears(v); }}
             >
                 {Array(2200).fill().map((b, i) => {
                     return <Select.Option key={`${i}years`} value={2200 - i} >{2200 - i}</Select.Option>
                 })}
-            </Select>
-
+            </Select> }
+            
+            { years.length > 0 &&
             <Select style={{ width: 500 }} title={""}
                 placeholder={'Select Dates in year'} allowClear showSearch
                 mode="tags"
@@ -171,9 +162,17 @@ export function TimeScales(props) {
                 {times.map((b, _) => {
                     return <Select.Option key={b.ut} value={b.ut} >{b.toString()}</Select.Option>
                 })}
+            </Select> }
+
+            <Select style={{ width: 200 }} title={""}
+                placeholder={'Select'} allowClear showSearch
+                value={transform}
+                onChange={(v) => { setTransform(v); }}
+            >
+                {transforms.map((b, i) => {
+                    return <Select.Option key={b} value={b} >{b}</Select.Option>
+                })}
             </Select>
-
-
 
             <Table dataSource={data}
                 columns={data.length > 0 ? Object.keys(data[0]).map((a, i) =>
