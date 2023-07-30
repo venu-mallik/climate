@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-    GeoVector, Observer, Equator
+    GeoVector, Observer, Equator, Horizon
     , Body, AstroTime, NextGlobalSolarEclipse, SearchLunarEclipse, MoonPhase, SearchMoonNode
 } from 'astronomy-engine';
 
@@ -38,9 +38,11 @@ function getValue(obs, date) {
     let time = new AstroTime(date);
     let lahiri = getLahari();
     Object.values(bodies).map((b) => {
-        let c = Number(Equator(b, time, obs, false, false).ra * 15) + Number(lahiri);
-        console.log(c, b, time)
-        record[b.toLowerCase()] = Number(c % 360).toFixed(2);
+        let eq = Equator(b, time, obs, true, true);
+        let hr =  Horizon(time, obs, eq.ra, eq.dec, 'normal');
+        let c = Number(eq.ra * 15) - Number(lahiri);
+        let d = Number(hr.ra * 15) - Number(lahiri);
+        record[b.toLowerCase()] = Number(Math.abs(d % 360)).toFixed(2);
 
     })
 
