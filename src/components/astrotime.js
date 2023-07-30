@@ -10,7 +10,7 @@ import { SearchMoonQuarter } from 'astronomy-engine';
 const isSSREnabled = () => typeof window === 'undefined';
 
 function getLahari(d) {
-    console.log(d);
+    
     if (d instanceof Date) {
 
         let a = (16.90709 * d.year / 1000) - 0.757371 * (d.year / 1000) * (d.year / 1000) - 6.92416100010001000;
@@ -107,7 +107,7 @@ export function TimeScales(props) {
         let obs = new Observer(Number(props?.selectedCity?.lat), Number(props?.selectedCity?.lon), Number(props?.selectedCity?.elevation));
         let arr = []
         dates.map((d, _) => {
-            console.log(obs)
+            //console.log(obs)
             let r = getValue(obs, d);
             arr.push({ ...r, time: new AstroTime(d).toString() })
         })
@@ -120,9 +120,12 @@ export function TimeScales(props) {
         if (mode === modes[0]) {
             Object.keys(earthQuakeTimes).map((b, _) => {
                 let x = new Date(b);
-                console.log(x, b);
                 a.push(x)
             })
+        }
+        if(mode === modes[1]){
+            setYears([]);
+            setData([]);
         }
         setDates(a);
     }, [mode])
