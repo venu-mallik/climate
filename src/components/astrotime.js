@@ -28,7 +28,7 @@ function getNodes(tim, lahiri) {
     let d = (JD.date.getTime() - tim.date.getTime()) / (1000 * 60 * 60 * 24);
     let rahu = (259.183 - 0.05295 * d + 0.002078 * Math.pow(t, 2) + 0.000002 * Math.pow(t, 3)) % 360;
     rahu = (rahu + lahiri) % 360
-    let ketu = rahu > 180 ? (rahu+180)%360 : rahu+180  ; 
+    let ketu = rahu > 180 ? (rahu + 180) % 360 : rahu + 180;
     return { rahu: Number(Math.abs(rahu)).toFixed(2), ketu: Number(Math.abs(ketu)).toFixed(2) }
 }
 const bodies = [Body.Sun, Body.Moon, Body.Mercury, Body.Venus, Body.Earth, Body.Mars, Body.Jupiter, Body.Saturn, Body.Uranus, Body.Neptune, Body.Pluto];
@@ -39,7 +39,7 @@ function getValue(obs, date) {
     let lahiri = getLahari();
     Object.values(bodies).map((b) => {
         let eq = Equator(b, time, obs, true, true);
-        let hr =  Horizon(time, obs, eq.ra, eq.dec, 'normal');
+        let hr = Horizon(time, obs, eq.ra, eq.dec, 'normal');
         let c = Number(eq.ra * 15) - Number(lahiri);
         let d = Number(hr.ra * 15) - Number(lahiri);
         record[b.toLowerCase()] = Number(Math.abs(d % 360)).toFixed(2);
@@ -50,15 +50,39 @@ function getValue(obs, date) {
     return { ...record, ...nn };
 }
 
+function doTransformer(t,flag){
+    switch (flag){
+        case 'd1':
+            return 1 + parseInt(Number(t)/30);
+        case 'd9':
+            return 1 + parseInt(((Number(t)*60)/2400));
+        case 'star':
+            return 1 + parseInt((Number(t)*60)/800);
+        case 'exal':
+            return t
+        case "debil":
+            return t
+        case "vargottama":
+            return parseInt((Number(t)*60)/2400) == parseInt(Number(t)/30) ? 1 : 0;
+        default:
+            return t
+    }
+}
+
+
+
 export function TimeScales(props) {
 
     const [data, setData] = useState([]);
     const [dates, setDates] = useState([]);
     const [years, setYears] = useState([]);
     const [times, setTimes] = useState([]);
-
+    const [saveData, setSaveData] = useState([]);
     const [mode, setMode] = useState("EarthQuake");
     const modes = ['EarthQuake'];
+
+    const [transform, setTransform] = useState("degree");
+    const transforms = ["degree", "d1", "d9", "star","exal", "debil", "vargottama"]
 
     const earthQuakeTimes = {
         '1960-05-22': 9.5, '1964-03-24': 9.2, '2004-12-26': 9.1, '2011-03-11': 9.0, '1952-11-04': 9.0
@@ -69,12 +93,12 @@ export function TimeScales(props) {
 
         years.map((y, i) => {
 
-                let start = new AstroTime(new Date(`2000-01-01T00:00:00.000+05:30`).setFullYear(y));
-                let arr = []
-                Array(366).fill().map((_, index) => {
-                    arr.push(start.AddDays(index))
-                })
-                setTimes([...times, ...arr]);
+            let start = new AstroTime(new Date(`2000-01-01T00:00:00.000+05:30`).setFullYear(y));
+            let arr = []
+            Array(366).fill().map((_, index) => {
+                arr.push(start.AddDays(index))
+            })
+            setTimes([...times, ...arr]);
         })
     }, [years])
 
@@ -87,7 +111,8 @@ export function TimeScales(props) {
             arr.push({ ...r, time: new AstroTime(d).toString() })
         })
         setData(arr);
-    }, [dates])
+        setSaveData(arr);
+    }, [dates, props.selectedCity.lat, props.selectedCity.lon])
 
     useEffect(() => {
         let a = [];
@@ -98,14 +123,13 @@ export function TimeScales(props) {
                 a.push(x)
             })
         }
-
         setDates(a);
     }, [mode])
 
     return (
         <>
 
-            <Select style={{ width: 500 }} title={""}
+            <Select style={{ width: 200 }} title={""}
                 placeholder={'Select'} allowClear showSearch
                 value={mode}
                 onChange={(v) => { setMode(v); }}
@@ -115,6 +139,18 @@ export function TimeScales(props) {
                 })}
             </Select>
 
+            <Select style={{ width: 200 }} title={""}
+                placeholder={'Select'} allowClear showSearch
+                value={transform}
+                onChange={(v) => { setTransform(v); }}
+            >
+                {transforms.map((b, i) => {
+                    return <Select.Option key={b} value={b} >{b}</Select.Option>
+                })}
+            </Select>
+
+
+
             <Select style={{ width: 500 }} title={""}
                 placeholder={'Select Years'} allowClear showSearch
                 mode="tags"
@@ -122,7 +158,7 @@ export function TimeScales(props) {
                 onChange={(v) => { setYears(v); }}
             >
                 {Array(2200).fill().map((b, i) => {
-                    return <Select.Option key={`${i}years`} value={2200-i} >{2200-i}</Select.Option>
+                    return <Select.Option key={`${i}years`} value={2200 - i} >{2200 - i}</Select.Option>
                 })}
             </Select>
 
@@ -140,7 +176,14 @@ export function TimeScales(props) {
 
 
             <Table dataSource={data}
-                columns={data.length > 0 ? Object.keys(data[0]).map((a, i) => ({ 'title': a, 'dataIndex': a, 'key': a })) : []}></Table>
+                columns={data.length > 0 ? Object.keys(data[0]).map((a, i) =>
+                    ({ 'title': a, 'dataIndex': a, 'key': a ,
+                        "render":  function (t,r,i) {
+                            if(a === 'time') return t;
+                            return doTransformer(t, transform);
+
+                        } }))
+                    : []}></Table>
         </>
     )
 
