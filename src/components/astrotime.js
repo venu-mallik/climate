@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
     GeoVector, Observer, Equator, Horizon
     , Body, AstroTime, NextGlobalSolarEclipse, SearchLunarEclipse, MoonPhase, SearchMoonNode
 } from 'astronomy-engine';
 
-import { Col, Row, Select, Layout, Table, Menu, Tag, Card } from 'antd';
-import { SearchMoonQuarter } from 'astronomy-engine';
+import {  Select,  Table, Divider } from 'antd';
 
 const isSSREnabled = () => typeof window === 'undefined';
 
@@ -29,9 +28,13 @@ function getNodes(tim, lahiri) {
     let rahu = (259.183 - 0.05295 * d + 0.002078 * Math.pow(t, 2) + 0.000002 * Math.pow(t, 3)) % 360;
     rahu = (rahu + lahiri) % 360
     let ketu = rahu > 180 ? (rahu + 180) % 360 : rahu + 180;
-    return { rahu: Number(Math.abs(rahu)).toFixed(2), ketu: Number(Math.abs(ketu)).toFixed(2) }
+    return { Rahu: Number(Math.abs(rahu)).toFixed(2), Ketu: Number(Math.abs(ketu)).toFixed(2) }
 }
 const bodies = [Body.Sun, Body.Moon, Body.Mercury, Body.Venus, Body.Earth, Body.Mars, Body.Jupiter, Body.Saturn, Body.Uranus, Body.Neptune, Body.Pluto];
+const BodyDistances = { [Body.Sun] : 0.00 , [Body.Mercury] : 0.462 , 
+    [Body.Venus] : 0.728, [Body.Earth]: 1.014, [Body.Moon]: 1.0159,
+[Body.Mars]: 1.644, [Body.Jupiter]: 4.96 , [Body.Saturn]: 9.80,
+[Body.Uranus]:  19.6, [Body.Neptune]: 29.886, [Body.Pluto]: 34.76}
 
 function getValue(obs, date) {
     let record = {};
@@ -42,7 +45,7 @@ function getValue(obs, date) {
         let hr = Horizon(time, obs, eq.ra, eq.dec, 'normal');
         let c = Number(eq.ra * 15) - Number(lahiri);
         let d = Number(hr.ra * 15) - Number(lahiri);
-        record[b.toLowerCase()] = Number(Math.abs(d % 360)).toFixed(2);
+        record[b] = Number(Math.abs(d % 360)).toFixed(2);
 
     })
 
@@ -69,6 +72,37 @@ function doTransformer(t,flag){
     }
 }
 
+function drawSky(ctx, row){
+
+
+    ctx.beginPath();
+    ctx.arc(100, 100, 100, 0, 2 * Math.PI);
+    ctx.stroke();
+
+
+    Object.entries(row).map(([k,v],i)=>{
+        if(bodies.includes(k)){
+            console.log(k,v)
+        ctx.beginPath();
+        ctx.arc(100, 100, BodyDistances[k]*3 , Number(v), Number(v)+0.10);
+        ctx.stroke();
+        }
+    })
+}
+
+
+const SkyCanvas = (props) =>
+{
+        const canvas = useRef();
+        useEffect(() => {
+          const context = canvas.current.getContext('2d');
+          drawSky(context, props.row);
+        });
+        return (
+
+          <canvas ref={canvas} title={props?.row?.time} height={200} width={200} />
+        );
+}
 
 
 export function TimeScales(props) {
@@ -176,7 +210,13 @@ export function TimeScales(props) {
                     return <Select.Option key={b} value={b} >{b}</Select.Option>
                 })}
             </Select>
-
+            <Divider></Divider>
+            {
+                
+                data.map((rec,id)=>{
+                    return <SkyCanvas  row={rec}  key={"canvas"+id}></SkyCanvas>
+                })
+            }
             <Table dataSource={data}
                 columns={data.length > 0 ? Object.keys(data[0]).map((a, i) =>
                     ({ 'title': a, 'dataIndex': a, 'key': a ,
