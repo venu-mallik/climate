@@ -1,191 +1,200 @@
-import {  SearchRiseSet, Observer, AstroTime  }  from 'astronomy-engine';
-import { Tag, Card, Space } from 'antd';
+import { SearchRiseSet, Observer, AstroTime, Body } from 'astronomy-engine';
+import { Tag, Card, Space, Select } from 'antd';
 import vegaEmbed from 'vega-embed';
 import { useCallback, useEffect, useState } from 'react';
 import spacetime from 'spacetime';
 import { apiURL } from './utils';
-import { model} from 'geomagnetism';
+import { model } from 'geomagnetism';
 
 
-const UVBOOK = { 1 : 0, 2 : 0 , 3 : 1.2, 4 : 1.2, 5 : 1.2, 6: 0.75, 7 : 0.75, 8 : 0.5, 9: 0.5 , 10 : 0.3 , 11: 0.3}
+const UVBOOK = { 1: 0, 2: 0, 3: 1.2, 4: 1.2, 5: 1.2, 6: 0.75, 7: 0.75, 8: 0.5, 9: 0.5, 10: 0.3, 11: 0.3 }
 
-function runVegaPlotYearlySunHour(body){
+function runVegaPlotYearlySunHour(body, bodies) {
+  let colors = { "Mercury" : "grey",
+  "Venus" : "yellow",
+  "Earth" : "white",
+  "Mars" : "red",
+  "Jupiter" : "orange",
+  "Saturn" : "black",
+  "Uranus" : "violet",
+  "Neptune" : "blue",
+  "pluto" : "mercury"
+}
 
-    var vlSpec = {
-      title : {"text": "Vitamin-D availability and requirement, Magnetic values", 
-    "subtitle" : " daytime : availability , vitd-fair/dark : percent daytime exposure needed in sunlight"},
-      width: "container",
-      height: "container",
-      $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-      data: {
-        values: body
-      },
-      "transform" : [{"calculate" : "datum.f*0.001" , "as" : "total-intensity"},
-      {"calculate" : "datum.h*0.001" , "as" : "horizontal-intensity"}],
-      "repeat": { "layer": ['daytime','vitd-fair','vitd-dark', 'total-intensity', 'horizontal-intensity', 'incl', 'decl']},
-      "spec":{
-      "mark": {"type":"point", "tooltip": true },
+  var vlSpec = {
+    title: {
+      "text": "Vitamin-D availability and requirement, Magnetic values",
+      "subtitle": " daytime : availability , vitd-fair/dark : percent daytime exposure needed in sunlight"
+    },
+    width: "container",
+    height: "container",
+    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    data: {
+      values: body
+    },
+    "transform": [{ "calculate": "datum.f*0.001", "as": "total-intensity" },
+    { "calculate": "datum.h*0.001", "as": "horizontal-intensity" }],
+    "repeat": { "layer": ['daytime', 'vitd-fair', 'vitd-dark', 'total-intensity', 'horizontal-intensity', 'incl', 'decl'] },
+    "spec": {
+      "mark": { "type": "point", "tooltip": true },
       "encoding": {
-        "x": {"type": "temporal", "field": "time"},
-        "y": { "field": {"repeat": "layer"}, "type": "quantitative" , 
-               "axis": {"values": [5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,100]}
-            },
-        "color": {"datum": {"repeat": "layer"}, "type": "nominal"}, 
+        "x": { "type": "temporal", "field": "time" },
+        "y": {
+          "field": { "repeat": "layer" }, "type": "quantitative",
+          "axis": { "values": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 100] }
+        },
+        "color": { "datum": { "repeat": "layer" }, "type": "nominal" },
       }
     }
-    };
-    vegaEmbed('#vis', vlSpec);
-  
-    var vlSpec1 = {
-      title : {"text": "Sun and Moon above the horizon", 
-        "subtitle" : "Do we really know, how the moon presence above horizon and its gravity impact us? "},
-      width: 'container',
-      height: 'container',
-      $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-      data: {
-        values: body
-      },
-      "encoding": {
-        "x": {"type": "temporal", "field": "time"}
-      },
-      "layer": [
-        { 
-          "mark": {"opacity": 0.5, "type": "area", "color": "orange"},
-              "encoding": { "y": {
-                "title": "Daily Sun above horizon",
-                "field": "sunrise",
-                "type": "temporal", 
-                "timeUnit": "utchoursminutes"
-              },
-              "y2": { 
-                "timeUnit": "utchoursminutes"  ,
-                "field": "sunset" ,
-                "type": "temporal"
-              },
-            }
-        },
-        {  
-          "mark": {"opacity": 0.5, "type": "area", "color": "blue"},
-          "encoding": {
-              "y": {
-                "title": "Daily Moon above horizon",
-                "field": "moonrise",
-                "type": "temporal", 
-                "timeUnit": "utchoursminutes"
-              },
-              "y2": { 
-                "timeUnit": "utchoursminutes"  ,
-                "field": "moonset" ,
-                "type": "temporal"
-              },
-          }
+  };
+  vegaEmbed('#vis', vlSpec);
+
+  var vlSpec1 = {
+    title: {
+      "text": "Sun, Moon, Planets above the horizon",
+      "subtitle": "Do we really know, how the moon presence above horizon and its gravity impact us? "
+    },
+    width: 'container',
+    height: 'container',
+    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    data: {
+      values: body
+    },
+    "encoding": {
+      "x": { "type": "temporal", "field": "time" }
+    },
+    "layer": bodies.map((b, i)=> (
+      {
+        "mark": { "opacity": 0.5, "type": "area", "color": colors[b] },
+        "encoding": {
+          "y": {
+            "title": "Daily Sun above horizon",
+            "field": `${b}rise`,
+            "type": "temporal",
+            "timeUnit": "utchoursminutes"
+          },
+          "y2": {
+            "timeUnit": "utchoursminutes",
+            "field": `${b}set`,
+            "type": "temporal"
+          },
         }
-      ],
-      "resolve": {"scale": {"y": "independent"}}
-    };
-    // Embed the visualization in the container with id `vis`
-    vegaEmbed('#vis1', vlSpec1); 
-  
-  }
-  
+      }))
+  };
+  console.log(vlSpec1);
+  // Embed the visualization in the container with id `vis`
+  vegaEmbed('#vis1', vlSpec1);
+
+}
+
+function correctValuesWithSpaceTime(v, tz) {
+  v = spacetime(v?.date.toISOString()).goto(tz).iso();
+  v = v.charAt(23) === "Z" ? v : v.slice(0, -6) + "Z"
+  return v
+}
+
+function nuLLCheckBody(now, v) {
+  return v === null ? new AstroTime(now) : v;
+}
+
 export const ClimateComponent = (props) => {
 
-    const [cityData,setCityData] = useState({});
-    const [mag,setMag] = useState([]);
+  const bodies = [Body.Sun, Body.Moon, Body.Mercury, Body.Venus, Body.Earth, Body.Mars, Body.Jupiter, Body.Saturn, Body.Uranus, Body.Neptune, Body.Pluto];
+  const [cityData, setCityData] = useState({});
+  const [mag, setMag] = useState([]);
+  const [selectedBodies, setSelectedBodies] = useState(['Sun']);
 
-    const getClimate = useCallback(async ()=>{
-        
-        const resp = await fetch(`${apiURL}/api/weather?lat=${props.selectedCity.lat}&lon=${props.selectedCity.lon}`)
-        const postResp = await resp.json();
-        console.log(postResp);
-        setCityData(postResp);
-    },[props.selectedCity])
+  const getClimate = useCallback(async () => {
 
-    useEffect(()=>{
-        getClimate()
-    },[props.selectedCity])
+    const resp = await fetch(`${apiURL}/api/weather?lat=${props.selectedCity.lat}&lon=${props.selectedCity.lon}`)
+    const postResp = await resp.json();
+    console.log(postResp);
+    setCityData(postResp);
+  }, [props.selectedCity])
 
-    useEffect(()=>{
-        let data = []
-        if("current" in cityData === false)
-          return;
-        let uvi = cityData['forecast']['forecastday'][0]["day"]["uv"]
-        const obs = new Observer( props.selectedCity.lat, props.selectedCity.lon, 
-          Number(props.selectedCity.elevation) === 'NaN' || Number(props.selectedCity.elevation) === -9999
-        ? 0 : Number(props.selectedCity.elevation) );
-        let times = []
-        const time = new AstroTime(new Date(`${new Date().getFullYear()}-01-01`));
-        Array(365).fill().map((_, index) => {
-          times.push(time.AddDays(index))
-        })
-    
-        Object.values(times).map((now, index) => {
-        let sunrise = SearchRiseSet("Sun", obs, 1 , now, 1  );
-        let sunset = SearchRiseSet("Sun", obs, -1 , sunrise ? sunrise : now , 1  );
-        if(sunrise === null || sunset === null){
-          let dayend = spacetime(now.date).endOf('day');
-          console.log(index, times[index], dayend);
-          sunrise = sunrise === null ?  new AstroTime(now) : sunrise;
-          sunset = sunset === null ? new AstroTime( now ) : sunset;
+  useEffect(() => {
+    getClimate()
+  }, [props.selectedCity])
+
+
+  useEffect(() => {
+    let data = []
+    if ("current" in cityData === false)
+      return;
+    let uvi = cityData['forecast']['forecastday'][0]["day"]["uv"];
+    let tz = props.selectedCity.timezone;
+    const obs = new Observer(props.selectedCity.lat, props.selectedCity.lon,
+      Number(props.selectedCity.elevation) === 'NaN' || Number(props.selectedCity.elevation) === -9999
+        ? 0 : Number(props.selectedCity.elevation));
+    let times = []
+    const time = new AstroTime(new Date(`${new Date().getFullYear()}-01-01`));
+    Array(365).fill().map((_, index) => {
+      times.push(time.AddDays(index))
+    })
+
+    Object.values(times).map((now, index) => {
+      const maginfo = model(now.date).point([props.selectedCity.lat, props.selectedCity.lon]);
+      let bodiesData = {} 
+      selectedBodies.map((body) => {
+        let bodyrise = SearchRiseSet(body, obs, 1, now, 1);
+        let bodyset = SearchRiseSet(body, obs, -1, bodyrise ? bodyrise : now, 1);
+        bodyrise = nuLLCheckBody(now, bodyrise);
+        bodyset = nuLLCheckBody(now, bodyset);
+        let bh = Number(Math.abs(bodyset?.date.getTime() - bodyrise?.date.getTime()) / 36e5).toFixed(2);
+        bodyrise = correctValuesWithSpaceTime(bodyrise, tz);
+        bodyset = correctValuesWithSpaceTime(bodyset, tz);
+        bodiesData[body+"rise"] = bodyrise;
+        bodiesData[body+"set"] = bodyset;
+        bodiesData[body+"hour"] = bh;
+        bodiesData['time'] = now;
+        if (body === "Sun"){
+          bodiesData["vitd-fair"] =  UVBOOK[uvi] * 100 / bh;
+          bodiesData["vitd-dark"] = UVBOOK[uvi] * 100 * 2 / bh;
         }
+      });
+        data.push({...bodiesData, ...maginfo});
+    });
+    runVegaPlotYearlySunHour(data, selectedBodies);
+  }, [cityData, selectedBodies])
 
-        const maginfo = model(now.date).point([props.selectedCity.lat, props.selectedCity.lon]);
+  return (
+    <>
+      <Card >
 
-        let moonrise = SearchRiseSet("Moon", obs, 1 , now, 1  )
-        let moonset = SearchRiseSet("Moon", obs, -1 , moonrise ? moonrise : now, 1  )  
-        let sh = Number(Math.abs(sunset?.date.getTime() - sunrise?.date.getTime() )/36e5).toFixed(2);
-        let mh = Number(Math.abs(moonset?.date.getTime() - moonrise?.date.getTime())/36e5).toFixed(2);
-        sunrise = spacetime(sunrise?.date.toISOString()).goto(props.selectedCity.timezone).iso();
-        sunset = spacetime(sunset?.date.toISOString()).goto(props.selectedCity.timezone).iso();
-        sunrise = sunrise.charAt(23) === "Z" ? sunrise : sunrise.slice(0,-6) + "Z"
-        sunset = sunset.charAt(23) === "Z" ? sunset : sunset.slice(0,-6) + "Z"
-        moonrise = spacetime(moonrise?.date.toISOString()).goto(props.selectedCity.timezone).iso();
-        moonset = spacetime(moonset?.date.toISOString()).goto(props.selectedCity.timezone).iso();
-        moonrise = moonrise.charAt(23) === "Z" ? moonrise : moonrise.slice(0,-6) + "Z"
-        moonset = moonset.charAt(23) === "Z" ? moonset : moonset.slice(0,-6) + "Z"
-        data.push(
-                  { 
-                    'time' : now,
-                    'sunrise' : sunrise, 'sunset' : sunset ,
-                      'moonrise' : moonrise, 'moonset' : moonset,
-                      'sunhour' : sh,
-                      'moonhour' : mh,
-                      "vitd-fair": UVBOOK[uvi]*100/sh,
-                      "vitd-dark":  UVBOOK[uvi]*100*2/sh ,
-                      "daytime" : sh*100/24 ,
-                      ...maginfo
-                  }
-              )
-          });
-          runVegaPlotYearlySunHour(data);
-        },[cityData])
-    
-    return (
-        <>
-        <Card >
-        
-        { 'forecast' in cityData  && 'forecastday' in cityData['forecast'] &&
-      'day' in cityData['forecast']['forecastday'][0] ?
-        Object.entries(cityData['forecast']['forecastday'][0]['day']).map(([k,v],_) =>{
-          
-            return  k == "air_quality" ? null : <Tag  >{k}:{ JSON.stringify(v)}</Tag>
-        }) : "Select a city"}
-        
-      { 'forecast' in cityData  && 'forecastday' in cityData['forecast'] &&
-      'day' in cityData['forecast']['forecastday'][0] && 'air_quality' in cityData['forecast']['forecastday'][0]['day']
-      ? 
-      Object.entries(cityData['forecast']['forecastday'][0]['day']['air_quality']).map(([k,v],_) =>{
-          
-          return  k == "air_quality" ? null : <Tag  >{k}:{ JSON.stringify(v)}</Tag>
-      }) : ""}
+        {'forecast' in cityData && 'forecastday' in cityData['forecast'] &&
+          'day' in cityData['forecast']['forecastday'][0] ?
+          Object.entries(cityData['forecast']['forecastday'][0]['day']).map(([k, v], _) => {
+
+            return k == "air_quality" ? null : <Tag  >{k}:{JSON.stringify(v)}</Tag>
+          }) : "Select a city"}
+
+        {'forecast' in cityData && 'forecastday' in cityData['forecast'] &&
+          'day' in cityData['forecast']['forecastday'][0] && 'air_quality' in cityData['forecast']['forecastday'][0]['day']
+          ?
+          Object.entries(cityData['forecast']['forecastday'][0]['day']['air_quality']).map(([k, v], _) => {
+
+            return k == "air_quality" ? null : <Tag  >{k}:{JSON.stringify(v)}</Tag>
+          }) : ""}
         <br></br>
         <br></br>
-        <div id="vis"  style={{ width: "95vw", height: "65vh"}}></div>
-        </Card>
-        <Card >
-        <div id="vis1"  style={{width: "95vw", height: "65vh"}}></div>
-        </Card>
-        <br></br>
-        </>
-    )
+        <div id="vis" style={{ width: "95vw", height: "65vh" }}></div>
+      </Card>
+      <Card title={
+        <Select style={{ width: 500 }} title={""}
+          placeholder={'Select Bodies to plot'} allowClear showSearch
+          mode="tags"
+          value={selectedBodies}
+          onChange={(v) => { setSelectedBodies(v); }} >
+          {
+            bodies.map((b, _) => {
+              return <Select.Option key={b} value={b} disabled={b == "Earth"}>{b}</Select.Option>
+            })}
+        </Select>
+
+      }    >
+        <div id="vis1" style={{ width: "95vw", height: "65vh" }}></div>
+      </Card>
+      <br></br>
+    </>
+  )
 }
