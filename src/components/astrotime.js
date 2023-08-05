@@ -36,6 +36,13 @@ const BodyDistances = { [Body.Sun] : 0.00 , [Body.Mercury] : 0.462 ,
 [Body.Mars]: 1.644, [Body.Jupiter]: 4.96 , [Body.Saturn]: 9.80,
 [Body.Uranus]:  19.6, [Body.Neptune]: 29.886, [Body.Pluto]: 34.76}
 
+const BodyAdjustedDistances = { [Body.Sun] : 0.00 , [Body.Mercury] : 2.5 , 
+    [Body.Venus] : 5, [Body.Earth]: 7.5, [Body.Moon]: 7.6,
+[Body.Mars]: 10, [Body.Jupiter]: 12.5 , [Body.Saturn]: 15,
+[Body.Uranus]:  19.6, [Body.Neptune]: 29.886, [Body.Pluto]: 34.76}
+
+
+
 function getValue(obs, date) {
     let record = {};
     let time = new AstroTime(date);
@@ -74,9 +81,9 @@ function doTransformer(t,flag){
 
 function drawSky(ctx, row){
 
-
+    ctx.reset()
     ctx.beginPath();
-    ctx.arc(100, 100, 100, 0, 2 * Math.PI);
+    ctx.arc(100, 100, 90, 0, 2 * Math.PI);
     ctx.stroke();
 
 
@@ -84,7 +91,7 @@ function drawSky(ctx, row){
         if(bodies.includes(k)){
             console.log(k,v)
         ctx.beginPath();
-        ctx.arc(100, 100, BodyDistances[k]*3 , Number(v), Number(v)+0.10);
+        ctx.arc(100, 100, BodyAdjustedDistances[k]*2.5 , Number(v), Number(v)+0.25);
         ctx.stroke();
         }
     })
