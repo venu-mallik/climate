@@ -5,7 +5,7 @@ import { apiURL } from '@/components/utils';
 import { MagneticComponent } from '@/components/magnetic';
 import { ClimateComponent } from '@/components/climate';
 import { DistanceComponent } from '@/components/distances';
-import { SoundComponent } from '@/components/mantras';
+import { MediaComponent, SoundComponent } from '@/components/mantras';
 import {TimeScales} from '@/components/astrotime';
 
 const topoapiKey = "7ff2ac7dc86df81348678acb072ce0c0";
@@ -77,7 +77,7 @@ export default function Home() {
               {key: 1, label: 'Climate'},
               {key: 3, label: 'Distances'},
               {key: 5, label: 'Time Scales'},
-              {key: 4, label: 'Music & Frequency'}
+              {key: 4, label: 'Frequency & electrons'}
             ]}
               onClick={(e) => { setActiveTab(e.key) }} />
           <Layout.Content>
@@ -111,7 +111,7 @@ export default function Home() {
                 <br></br>
                 {activeTab == 2 && <MagneticComponent data={cities} country={country}   />}
                 {activeTab == 1 && <ClimateComponent data={cities} country={country} selectedCity={selectedCity} />}
-                {activeTab == 4 && <SoundComponent /> }
+                {activeTab == 4 && <MediaComponent /> }
 
                 { activeTab == 3 && 
                   <DistanceComponent data={cities} country={country} selectedCity={selectedCity}/> }
