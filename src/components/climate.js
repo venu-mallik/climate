@@ -1,5 +1,5 @@
 import { SearchRiseSet, Observer, AstroTime, Body } from 'astronomy-engine';
-import { Tag, Card, Space, Select } from 'antd';
+import { Tag, Card, Space, Select, Divider } from 'antd';
 import vegaEmbed from 'vega-embed';
 import { useCallback, useEffect, useState } from 'react';
 import spacetime from 'spacetime';
@@ -175,15 +175,14 @@ export const ClimateComponent = (props) => {
           'day' in cityData['forecast']['forecastday'][0] ?
           Object.entries(cityData['forecast']['forecastday'][0]['day']).map(([k, v], _) => {
 
-            return k == "air_quality" ? null : <Tag  >{k}:{JSON.stringify(v)}</Tag>
+            return ["air_quality","condition"].includes(k) ? null : <Tag  >{k}:{JSON.stringify(v)}</Tag>
           }) : "Select a city"}
-
         {'forecast' in cityData && 'forecastday' in cityData['forecast'] &&
           'day' in cityData['forecast']['forecastday'][0] && 'air_quality' in cityData['forecast']['forecastday'][0]['day']
           ?
           Object.entries(cityData['forecast']['forecastday'][0]['day']['air_quality']).map(([k, v], _) => {
 
-            return k == "air_quality" ? null : <Tag  >{k}:{JSON.stringify(v)}</Tag>
+            return   <Tag  >{k}:{JSON.stringify(v)}</Tag>
           }) : ""}
         <br></br>
         <br></br>
