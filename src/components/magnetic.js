@@ -74,7 +74,7 @@ function vegaGeo(data) {
                     "longitude": { "field": "lon", "type": "quantitative" },
                     "latitude": { "field": "lat", "type": "quantitative" },
                     "color": {"field": "f", "bin": {"binned": true, "maxbins": 10 }},
-                    "tooltip": [{ "field": "name" }, { "field": "population", "type": "quantitative" }]
+                    "tooltip": [{ "field": "name" }, { "field": "population", "type": "quantitative" }, { "field": "f", "type": "quantitative" }]
                 },
                 "config": {
                     "view": {
@@ -109,7 +109,7 @@ function vegaGeo(data) {
                     "latitude": { "field": "lat", "type": "quantitative" },
                     "size": {"value": 5},
                     "color": {"field": "elevation", "type" : "ordinal"},
-                    "tooltip": [{ "field": "name" }, { "field": "population", "type": "quantitative" }]
+                    "tooltip": [{ "field": "name" }, { "field": "elevation", "type": "quantitative" }]
                 },
                 "config": {
                     "view": {
