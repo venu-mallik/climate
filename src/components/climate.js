@@ -102,6 +102,7 @@ export const ClimateComponent = (props) => {
   const bodies = [Body.Sun, Body.Moon, Body.Mercury, Body.Venus, Body.Earth, Body.Mars, Body.Jupiter, Body.Saturn, Body.Uranus, Body.Neptune, Body.Pluto];
   const [cityData, setCityData] = useState({});
   const [mag, setMag] = useState([]);
+  const [years, setYears] = useState([2023]);
   const [selectedBodies, setSelectedBodies] = useState(['Sun']);
 
   const getClimate = useCallback(async () => {
@@ -127,13 +128,22 @@ export const ClimateComponent = (props) => {
       Number(props.selectedCity.elevation) === 'NaN' || Number(props.selectedCity.elevation) === -9999
         ? 0 : Number(props.selectedCity.elevation));
     let times = []
-    const time = new AstroTime(new Date(`${new Date().getFullYear()}-01-01`));
-    Array(365).fill().map((_, index) => {
-      times.push(time.AddDays(index))
+    years.map((y,_)=>{
+      let d = new Date(`2000-01-01T00:00:00.000+05:30`);
+      d.setFullYear(y);
+      const time = new AstroTime(d);
+      Array(365).fill().map((_, index) => {
+        times.push(time.AddDays(index))
+      })
     })
 
     Object.values(times).map((now, index) => {
-      const maginfo = model(now.date).point([props.selectedCity.lat, props.selectedCity.lon]);
+      let maginfo = {}
+      try {
+        maginfo = model(now.date).point([props.selectedCity.lat, props.selectedCity.lon]);
+      }
+      catch(err){
+      }
       let bodiesData = {} 
       selectedBodies.map((body) => {
         let bodyrise = SearchRiseSet(body, obs, 1, now, 1);
@@ -155,7 +165,7 @@ export const ClimateComponent = (props) => {
         data.push({...bodiesData, ...maginfo});
     });
     runVegaPlotYearlySunHour(data, selectedBodies);
-  }, [cityData, selectedBodies])
+  }, [cityData, selectedBodies, years])
 
   return (
     <>
@@ -177,9 +187,9 @@ export const ClimateComponent = (props) => {
           }) : ""}
         <br></br>
         <br></br>
-        <div id="vis" style={{ width: "95vw", height: "65vh" }}></div>
       </Card>
       <Card title={
+        <>
         <Select style={{ width: 500 }} title={""}
           placeholder={'Select Bodies to plot'} allowClear showSearch
           mode="tags"
@@ -190,9 +200,22 @@ export const ClimateComponent = (props) => {
               return <Select.Option key={b} value={b} disabled={b == "Earth"}>{b}</Select.Option>
             })}
         </Select>
+        <Select style={{ width: 500 }} title={""}
+                placeholder={'Select Years'} allowClear showSearch
+                mode="tags"
+                value={years}
+                onChange={(v) => {  setYears(v); }}
+            >
+                {Array(2200).fill().map((b, i) => {
+                    return <Select.Option key={`${i}years`} value={2200 - i} >{2200 - i}</Select.Option>
+                })}
+            </Select></>
 
       }    >
         <div id="vis1" style={{ width: "95vw", height: "65vh" }}></div>
+      </Card>
+      <Card>
+        <div id="vis" style={{ width: "95vw", height: "65vh" }}></div>
       </Card>
       <br></br>
     </>
