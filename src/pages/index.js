@@ -6,7 +6,8 @@ import { MagneticComponent } from '@/components/magnetic';
 import { ClimateComponent } from '@/components/climate';
 import { DistanceComponent } from '@/components/distances';
 import { MediaComponent, SoundComponent } from '@/components/mantras';
-import {TimeScales} from '@/components/astrotime';
+import {AstroScales} from '@/components/astrotime';
+import { TimeScales } from '@/components/timescale';
 
 const topoapiKey = "7ff2ac7dc86df81348678acb072ce0c0";
 
@@ -76,8 +77,9 @@ export default function Home() {
               {key: 2, label: 'Magnetic'},
               {key: 1, label: 'Climate'},
               {key: 3, label: 'Distances'},
-              {key: 5, label: 'Time Scales'},
-              {key: 4, label: 'Frequency & electrons'}
+              {key: 5, label: 'Astronomy'},
+              {key: 4, label: 'Frequency & electrons'},
+              {key: 6, label: 'Time Scales'}
             ]}
               onClick={(e) => { setActiveTab(e.key) }} />
           <Layout.Content>
@@ -117,6 +119,8 @@ export default function Home() {
                   <DistanceComponent data={cities} country={country} selectedCity={selectedCity}/> }
                 
                 { activeTab == 5 && 
+                  <AstroScales selectedCity={selectedCity}/> }
+                { activeTab == 6 && 
                   <TimeScales selectedCity={selectedCity}/> }
                 </Layout.Content>
                 </Layout>

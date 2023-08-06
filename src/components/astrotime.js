@@ -112,7 +112,7 @@ const SkyCanvas = (props) =>
 }
 
 
-export function TimeScales(props) {
+export function AstroScales(props) {
 
     const [data, setData] = useState([]);
     const [dates, setDates] = useState([]);
