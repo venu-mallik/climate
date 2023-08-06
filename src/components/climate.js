@@ -52,7 +52,7 @@ function runVegaPlotYearlySunHour(body, bodies) {
   var vlSpec1 = {
     title: {
       "text": "Sun, Moon, Planets above the horizon",
-      "subtitle": "Do we really know, how the moon presence above horizon and its gravity impact us? "
+      "subtitle": "Do we really know, how the planets presence above horizon impact us? "
     },
     width: 'container',
     height: 'container',
@@ -65,7 +65,7 @@ function runVegaPlotYearlySunHour(body, bodies) {
     },
     "layer": bodies.map((b, i)=> (
       {
-        "mark": { "opacity": 0.5, "type": "area", "color": colors[b] },
+        "mark": { "opacity": 0.5, "type": "area", "color": colors[b], "tooltip": true },
         "encoding": {
           "y": {
             "title": "Daily Sun above horizon",
