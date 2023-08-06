@@ -1,5 +1,5 @@
-import { SearchRiseSet, Observer, AstroTime, Body } from 'astronomy-engine';
-import { Tag, Card, Space, Select, Divider } from 'antd';
+import { SearchRiseSet, Observer, AstroTime, Body, SearchRelativeLongitude } from 'astronomy-engine';
+import { Tag, Card, Space, Select, Divider, Row, Col } from 'antd';
 import vegaEmbed from 'vega-embed';
 import { useCallback, useEffect, useState } from 'react';
 import spacetime from 'spacetime';
@@ -10,16 +10,17 @@ import { model } from 'geomagnetism';
 const UVBOOK = { 1: 0, 2: 0, 3: 1.2, 4: 1.2, 5: 1.2, 6: 0.75, 7: 0.75, 8: 0.5, 9: 0.5, 10: 0.3, 11: 0.3 }
 
 function runVegaPlotYearlySunHour(body, bodies) {
-  let colors = { "Mercury" : "grey",
-  "Venus" : "yellow",
-  "Earth" : "white",
-  "Mars" : "red",
-  "Jupiter" : "orange",
-  "Saturn" : "black",
-  "Uranus" : "violet",
-  "Neptune" : "blue",
-  "pluto" : "mercury"
-}
+  let colors = {
+    "Mercury": "grey",
+    "Venus": "yellow",
+    "Earth": "white",
+    "Mars": "red",
+    "Jupiter": "orange",
+    "Saturn": "black",
+    "Uranus": "violet",
+    "Neptune": "blue",
+    "pluto": "mercury"
+  }
 
   var vlSpec = {
     title: {
@@ -63,12 +64,11 @@ function runVegaPlotYearlySunHour(body, bodies) {
     "encoding": {
       "x": { "type": "temporal", "field": "time" }
     },
-    "layer": bodies.map((b, i)=> (
+    "layer": bodies.map((b, i) => (
       {
         "mark": { "opacity": 0.5, "type": "area", "color": colors[b], "tooltip": true },
         "encoding": {
           "y": {
-            "title": "Daily Sun above horizon",
             "field": `${b}rise`,
             "type": "temporal",
             "timeUnit": "utchoursminutes"
@@ -128,7 +128,7 @@ export const ClimateComponent = (props) => {
       Number(props.selectedCity.elevation) === 'NaN' || Number(props.selectedCity.elevation) === -9999
         ? 0 : Number(props.selectedCity.elevation));
     let times = []
-    years.map((y,_)=>{
+    years.map((y, _) => {
       let d = new Date(`2000-01-01T00:00:00.000+05:30`);
       d.setFullYear(y);
       const time = new AstroTime(d);
@@ -142,9 +142,9 @@ export const ClimateComponent = (props) => {
       try {
         maginfo = model(now.date).point([props.selectedCity.lat, props.selectedCity.lon]);
       }
-      catch(err){
+      catch (err) {
       }
-      let bodiesData = {} 
+      let bodiesData = {}
       selectedBodies.map((body) => {
         let bodyrise = SearchRiseSet(body, obs, 1, now, 1);
         let bodyset = SearchRiseSet(body, obs, -1, bodyrise ? bodyrise : now, 1);
@@ -153,16 +153,16 @@ export const ClimateComponent = (props) => {
         let bh = Number(Math.abs(bodyset?.date.getTime() - bodyrise?.date.getTime()) / 36e5).toFixed(2);
         bodyrise = correctValuesWithSpaceTime(bodyrise, tz);
         bodyset = correctValuesWithSpaceTime(bodyset, tz);
-        bodiesData[body+"rise"] = bodyrise;
-        bodiesData[body+"set"] = bodyset;
-        bodiesData[body+"hour"] = bh;
+        bodiesData[body + "rise"] = bodyrise;
+        bodiesData[body + "set"] = bodyset;
+        bodiesData[body + "hour"] = bh;
         bodiesData['time'] = now;
-        if (body === "Sun"){
-          bodiesData["vitd-fair"] =  UVBOOK[uvi] * 100 / bh;
+        if (body === "Sun") {
+          bodiesData["vitd-fair"] = UVBOOK[uvi] * 100 / bh;
           bodiesData["vitd-dark"] = UVBOOK[uvi] * 100 * 2 / bh;
         }
       });
-        data.push({...bodiesData, ...maginfo});
+      data.push({ ...bodiesData, ...maginfo });
     });
     runVegaPlotYearlySunHour(data, selectedBodies);
   }, [cityData, selectedBodies, years])
@@ -175,46 +175,63 @@ export const ClimateComponent = (props) => {
           'day' in cityData['forecast']['forecastday'][0] ?
           Object.entries(cityData['forecast']['forecastday'][0]['day']).map(([k, v], _) => {
 
-            return ["air_quality","condition"].includes(k) ? null : <Tag  >{k}:{JSON.stringify(v)}</Tag>
+            return ["air_quality", "condition"].includes(k) ? null : <Tag  >{k}:{JSON.stringify(v)}</Tag>
           }) : "Select a city"}
         {'forecast' in cityData && 'forecastday' in cityData['forecast'] &&
           'day' in cityData['forecast']['forecastday'][0] && 'air_quality' in cityData['forecast']['forecastday'][0]['day']
           ?
           Object.entries(cityData['forecast']['forecastday'][0]['day']['air_quality']).map(([k, v], _) => {
 
-            return   <Tag  >{k}:{JSON.stringify(v)}</Tag>
+            return <Tag  >{k}:{JSON.stringify(v)}</Tag>
           }) : ""}
         <br></br>
         <br></br>
       </Card>
       <Card title={
         <>
-        <Select style={{ width: 500 }} title={""}
-          placeholder={'Select Bodies to plot'} allowClear showSearch
-          mode="tags"
-          value={selectedBodies}
-          onChange={(v) => { setSelectedBodies(v); }} >
-          {
-            bodies.map((b, _) => {
-              return <Select.Option key={b} value={b} disabled={b == "Earth"}>{b}</Select.Option>
+          <Select style={{ width: 500 }} title={""}
+            placeholder={'Select Bodies to plot'} allowClear showSearch
+            mode="tags"
+            value={selectedBodies}
+            onChange={(v) => { setSelectedBodies(v); }} >
+            {
+              bodies.map((b, _) => {
+                return <Select.Option key={b} value={b} disabled={b == "Earth"}>{b}</Select.Option>
+              })}
+          </Select>
+          <Select style={{ width: 500 }} title={""}
+            placeholder={'Select Years'} allowClear showSearch
+            mode="tags"
+            value={years}
+            onChange={(v) => { setYears(v); }}
+          >
+            {Array(2200).fill().map((b, i) => {
+              return <Select.Option key={`${i}years`} value={2200 - i} >{2200 - i}</Select.Option>
             })}
-        </Select>
-        <Select style={{ width: 500 }} title={""}
-                placeholder={'Select Years'} allowClear showSearch
-                mode="tags"
-                value={years}
-                onChange={(v) => {  setYears(v); }}
-            >
-                {Array(2200).fill().map((b, i) => {
-                    return <Select.Option key={`${i}years`} value={2200 - i} >{2200 - i}</Select.Option>
-                })}
-            </Select></>
+          </Select></>
 
       }    >
         <div id="vis1" style={{ width: "95vw", height: "65vh" }}></div>
       </Card>
       <Card>
         <div id="vis" style={{ width: "95vw", height: "65vh" }}></div>
+      </Card>
+      <Card title={"Heliocentric Relative longitude between Earth and Planets After Days"}>
+        {
+          [-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180].map((trl, _) => {
+            return <Row>
+              <Col><Tag> {trl} </Tag></Col>
+              {bodies.map((b, _) => {
+
+                return ['Sun', 'Moon', 'Earth'].includes(b) === false && <Col> <Tag> {b} : {
+                  spacetime(new Date().toISOString()).diff(SearchRelativeLongitude(b, trl, new AstroTime(new Date()))?.date?.toISOString(),'days')}
+                </Tag></Col>
+
+              })}
+            </Row>
+          })
+        }
+
       </Card>
       <br></br>
     </>
