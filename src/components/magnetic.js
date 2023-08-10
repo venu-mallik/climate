@@ -201,7 +201,13 @@ export const MagneticComponent = (props) => {
                     style={{width: '100vw'}}
                     scroll={{x : 1800}}
                     columns={data.length > 0 ? Object.keys(data[0]).map((a, i) =>
-                        ({ 'title': a, 'dataIndex': a, 'key': a , 'fixed' : i < 2 ? 'left' : false }))
+                        ({ 'title': a, 'dataIndex': a, 'key': a , 'fixed' : i < 2 ? 'left' : false,
+                        "render":  function (t,r,i) {
+                            if(t instanceof Number) return Number(t).toFixed(3);
+                            return t;
+                        }
+
+                        }))
                         : []}></Table>
             </Card>
 
