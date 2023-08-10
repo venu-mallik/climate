@@ -203,7 +203,7 @@ export const MagneticComponent = (props) => {
                     columns={data.length > 0 ? Object.keys(data[0]).map((a, i) =>
                         ({ 'title': a, 'dataIndex': a, 'key': a , 'fixed' : i < 2 ? 'left' : false,
                         "render":  function (t,r,i) {
-                            if(t instanceof Number) return Number(t).toFixed(3);
+                            if(isFinite(t)) return Number(t).toFixed(5);
                             return t;
                         }
 
