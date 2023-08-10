@@ -5,6 +5,7 @@ function deg2rad(deg) {
     return deg * (Math.PI/180)
   }
 
+export const opencellid_key = "pk.2b3b948f9d7abf01b0c73bd5907bcf73";
   
 export function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
     

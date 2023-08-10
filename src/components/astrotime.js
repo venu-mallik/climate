@@ -224,9 +224,9 @@ export function AstroScales(props) {
                     return <SkyCanvas  row={rec}  key={"canvas"+id}></SkyCanvas>
                 })
             }
-            <Table dataSource={data}
+            <Table dataSource={data} style={{width: '100vw'}} scroll={{x : 1500}}
                 columns={data.length > 0 ? Object.keys(data[0]).map((a, i) =>
-                    ({ 'title': a, 'dataIndex': a, 'key': a ,
+                    ({ 'title': a, 'dataIndex': a, 'key': a , 'fixed' : a === "time" ? "right": false,
                         "render":  function (t,r,i) {
                             if(a === 'time') return t;
                             return doTransformer(t, transform);
