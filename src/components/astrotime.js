@@ -25,8 +25,9 @@ function getNodes(tim, lahiri) {
     let t = 1.018;
     const JD = new AstroTime(new Date(1900, 0, 1, 0, 0, 0));
     let d = (JD.date.getTime() - tim.date.getTime()) / (1000 * 60 * 60 * 24);
-    let rahu = (259.183 - 0.05295 * d + 0.002078 * Math.pow(t, 2) + 0.000002 * Math.pow(t, 3)) % 360;
-    rahu = (rahu + lahiri) % 360
+    console.log(d)
+    let rahu = (259.183 - 0.05295 * (d+1) + 0.002078 * Math.pow(t, 2) + 0.000002 * Math.pow(t, 3)) % 360;
+    rahu = (rahu - lahiri) % 360 
     let ketu = rahu > 180 ? (rahu + 180) % 360 : rahu + 180;
     return { Rahu: Number(Math.abs(rahu)).toFixed(2), Ketu: Number(Math.abs(ketu)).toFixed(2) }
 }
