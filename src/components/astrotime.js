@@ -25,7 +25,6 @@ function getNodes(tim, lahiri) {
     let t = 1.018;
     const JD = new AstroTime(new Date(1900, 0, 1, 0, 0, 0));
     let d = (JD.date.getTime() - tim.date.getTime()) / (1000 * 60 * 60 * 24);
-    console.log(d)
     let rahu = (259.183 - 0.05295 * (d+1) + 0.002078 * Math.pow(t, 2) + 0.000002 * Math.pow(t, 3)) % 360;
     rahu = (rahu - lahiri) % 360 
     let ketu = rahu > 180 ? (rahu + 180) % 360 : rahu + 180;
@@ -90,7 +89,6 @@ function drawSky(ctx, row){
 
     Object.entries(row).map(([k,v],i)=>{
         if(bodies.includes(k)){
-            console.log(k,v)
         ctx.beginPath();
         ctx.arc(100, 100, BodyAdjustedDistances[k]*2.5 , Number(v), Number(v)+0.25);
         ctx.stroke();

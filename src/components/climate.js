@@ -81,7 +81,6 @@ function runVegaPlotYearlySunHour(body, bodies) {
         }
       }))
   };
-  console.log(vlSpec1);
   // Embed the visualization in the container with id `vis`
   vegaEmbed('#vis1', vlSpec1);
 
@@ -109,7 +108,6 @@ export const ClimateComponent = (props) => {
 
     const resp = await fetch(`${apiURL}/api/weather?lat=${props.selectedCity.lat}&lon=${props.selectedCity.lon}`)
     const postResp = await resp.json();
-    console.log(postResp);
     setCityData(postResp);
   }, [props.selectedCity])
 

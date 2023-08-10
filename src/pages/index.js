@@ -5,7 +5,7 @@ import { apiURL } from '@/components/utils';
 import { MagneticComponent } from '@/components/magnetic';
 import { ClimateComponent } from '@/components/climate';
 import { DistanceComponent } from '@/components/distances';
-import { MediaComponent, SoundComponent } from '@/components/mantras';
+import { MediaComponent, SoundComponent } from '@/components/health';
 import {AstroScales} from '@/components/astrotime';
 import { TimeScales } from '@/components/timescale';
 
@@ -78,7 +78,7 @@ export default function Home() {
               {key: 1, label: 'Climate'},
               {key: 3, label: 'Distances'},
               {key: 5, label: 'Astronomy'},
-              {key: 4, label: 'Frequency & electrons'},
+              {key: 4, label: 'Health Media'},
               {key: 6, label: 'Time Scales'}
             ]}
               onClick={(e) => { setActiveTab(e.key) }} />
