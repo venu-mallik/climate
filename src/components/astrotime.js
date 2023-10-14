@@ -5,6 +5,7 @@ import {
 } from 'astronomy-engine';
 
 import {  Select,  Table, Divider } from 'antd';
+import { Stars } from './_panchangerules';
 
 const isSSREnabled = () => typeof window === 'undefined';
 
