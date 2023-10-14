@@ -32,7 +32,7 @@ function getNodes(tim, lahiri) {
     let ketu = rahu > 180 ? (rahu + 180) % 360 : rahu + 180;
     return { Rahu: Number(Math.abs(rahu)).toFixed(2), Ketu: Number(Math.abs(ketu)).toFixed(2) }
 }
-const bodies = [Body.Sun, Body.Moon, Body.Mercury, Body.Venus, Body.Earth, Body.Mars, Body.Jupiter, Body.Saturn, Body.Uranus, Body.Neptune, Body.Pluto];
+const allBodies = [Body.Sun, Body.Moon, Body.Mercury, Body.Venus, Body.Earth, Body.Mars, Body.Jupiter, Body.Saturn, Body.Uranus, Body.Neptune, Body.Pluto];
 const BodyDistances = { [Body.Sun] : 0.00 , [Body.Mercury] : 0.462 , 
     [Body.Venus] : 0.728, [Body.Earth]: 1.014, [Body.Moon]: 1.0159,
 [Body.Mars]: 1.644, [Body.Jupiter]: 4.96 , [Body.Saturn]: 9.80,
@@ -45,7 +45,7 @@ const BodyAdjustedDistances = { [Body.Sun] : 0.00 , [Body.Mercury] : 2.5 ,
 
 
 
-function getValue(obs, date) {
+function getValue(obs, date, bodies) {
     let record = {};
     let time = new AstroTime(date);
     let lahiri = getLahari();
@@ -121,7 +121,7 @@ export function AstroScales(props) {
     const [years, setYears] = useState([]);
     const [times, setTimes] = useState([]);
     const [saveData, setSaveData] = useState([]);
-    const [statebodies,setBodies] = useState([Body.Sun, Body.Moon]);
+    const [bodies,setBodies] = useState([Body.Sun, Body.Moon]);
     const [mode, setMode] = useState("EarthQuake");
     const modes = ['EarthQuake',"Browse","Sachin_ODIs"];
 
@@ -152,7 +152,7 @@ export function AstroScales(props) {
         let arr = []
         dates.map((d, _) => {
             //console.log(obs)
-            let r = getValue(obs, d.date);
+            let r = getValue(obs, d.date, bodies);
             let k = { ...r, time: new AstroTime(d.date).toString() };
             if(mode === modes[2]){
                 k['score'] = d.score;
@@ -161,7 +161,7 @@ export function AstroScales(props) {
         })
         setData(arr);
         setSaveData(arr);
-    }, [dates, props.selectedCity.lat, props.selectedCity.lon])
+    }, [dates, bodies, props.selectedCity.lat, props.selectedCity.lon])
 
     useEffect(() => {
         let a = [];
@@ -197,6 +197,25 @@ export function AstroScales(props) {
                 })}
             </Select>
 
+            <Select style={{ width: 200 }} title={""}
+                placeholder={'Select'} allowClear showSearch
+                value={transform}
+                onChange={(v) => { setTransform(v); }}
+            >
+                {transforms.map((b, i) => {
+                    return <Select.Option key={b} value={b} >{b}</Select.Option>
+                })}
+            </Select>
+
+            <Select style={{ width: 600 }} title={""}
+                placeholder={'Select'} allowClear showSearch mode="tags"
+                value={bodies}
+                onChange={(v) => { setBodies(v); }}
+            >
+                {allBodies.map((b, i) => {
+                    return <Select.Option key={b} value={b} >{b}</Select.Option>
+                })}
+            </Select>
             { mode === "Browse" &&
             <Select style={{ width: 500 }} title={""}
                 placeholder={'Select Years'} allowClear showSearch
@@ -213,23 +232,15 @@ export function AstroScales(props) {
             <Select style={{ width: 500 }} title={""}
                 placeholder={'Select Dates in year'} allowClear showSearch
                 mode="tags"
-                value={dates}
-                onChange={(v) => { setDates(v); }}
+                value={dates.map(a => a.date)}
+                onChange={(v) => { setDates(v.map(a => ({date:a}))); }}
             >
                 {times.map((b, _) => {
                     return <Select.Option key={b.ut} value={b.ut} >{b.toString()}</Select.Option>
                 })}
             </Select> }
 
-            <Select style={{ width: 200 }} title={""}
-                placeholder={'Select'} allowClear showSearch
-                value={transform}
-                onChange={(v) => { setTransform(v); }}
-            >
-                {transforms.map((b, i) => {
-                    return <Select.Option key={b} value={b} >{b}</Select.Option>
-                })}
-            </Select>
+            
             <Divider></Divider>
             {/*
                 
