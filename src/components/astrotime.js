@@ -6,7 +6,10 @@ import {
 
 import {  Select,  Table, Divider } from 'antd';
 import { sachin_odis } from './_datasets';
-import { Stars } from './_panchangerules';
+import { GoodDaysBy_Day_thithi,
+VeryGoodDaysBy_Day_Stars, 
+BadDaysByDay_thithi , BadDaysBy_Day_Stars, DLNL_Day_Star
+ } from './_panchangerules';
 
 const isSSREnabled = () => typeof window === 'undefined';
 
@@ -44,6 +47,18 @@ const BodyAdjustedDistances = { [Body.Sun] : 0.00 , [Body.Mercury] : 2.5 ,
 [Body.Uranus]:  19.6, [Body.Neptune]: 29.886, [Body.Pluto]: 34.76}
 
 
+function computeStrength(record ){
+    let day = parseInt(record['weekday']);
+    let ga = VeryGoodDaysBy_Day_Stars[day].includes(record['star'])? 1 : 0;
+    let gb = GoodDaysBy_Day_thithi[day].includes(record['thihti'])? 1 : 0;
+    let dlnl = DLNL_Day_Star[day].includes(record['star']) ? 1 : 0;
+
+
+    let ba = BadDaysByDay_thithi[day].includes(record['thithi']) ? 1 : 0;
+    let bb = BadDaysBy_Day_Stars[day].includes(record['star'])? 1 : 0;
+
+    return {"good" : ga + gb + dlnl , "bad": ba + bb};
+}
 
 function getValue(obs, date, bodies) {
     let record = {};
@@ -57,10 +72,13 @@ function getValue(obs, date, bodies) {
 
     })
     let th = record[Body.Moon] - record[Body.Sun];
-    record['thithi'] = th < 0 ? Number(((th+360)/12)+1).toFixed(0) : Number(1 +(th/12)).toFixed(0);
+    record['thithi'] = th < 0 ? parseInt((th+360)/12+1) : parseInt(1 +(th/12));
+    record['star'] = parseInt(record[Body.Moon]/27)+1;
+    record['weekday'] = time.date.getDay();
 
+    let st  = computeStrength(record);
     let nn = getNodes(time, lahiri);
-    return { ...record, ...nn };
+    return { ...record, ...nn, ...st };
 }
 
 function doTransformer(t,flag){
@@ -122,7 +140,7 @@ export function AstroScales(props) {
     const [times, setTimes] = useState([]);
     const [saveData, setSaveData] = useState([]);
     const [bodies,setBodies] = useState([Body.Sun, Body.Moon]);
-    const [mode, setMode] = useState("EarthQuake");
+    const [mode, setMode] = useState("Sachin_ODIs");
     const modes = ['EarthQuake',"Browse","Sachin_ODIs"];
 
     const [transform, setTransform] = useState("degree");
@@ -228,7 +246,7 @@ export function AstroScales(props) {
                 })}
             </Select> }
             
-            { years.length > 0 &&
+            { years.length > 0 && mode === "Browse" &&
             <Select style={{ width: 500 }} title={""}
                 placeholder={'Select Dates in year'} allowClear showSearch
                 mode="tags"
