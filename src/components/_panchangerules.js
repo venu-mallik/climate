@@ -29,30 +29,33 @@ StarsBy.Dhanishta, StarsBy.Uttara_Phalguni, StarsBy.Uttara_Ashadha, StarsBy.Utta
 
 export const BadThithiForSubhaKaryalu = [4,19,6,21,8,23,,9,24,12,27,14,28,15,30];
 
+export const DLNL_Day_Star = {0 : [3,12,21], 1: [4,13,22], 2:[5,14,23,], 3: [9,18,27], 4:[7,16,25], 5:[ 2,11,20], 6: [8,17,26]};
+
+
 // page 146 para 1,5
 export const BadDaysBy_Day_Stars = {
-0: [StarsBy.Vishakha],
-1: [StarsBy.Purva_Ashadha,StarsBy.Uttara_Ashadha,StarsBy.Shravana,StarsBy.Chitra],
-2: [StarsBy.Dhanishta, StarsBy.Shatabhisha,StarsBy.Purva_Bhadrapada,StarsBy.Uttara_Ashadha],
-3: [StarsBy.Revati, StarsBy.Ashwini, StarsBy.Bharani, StarsBy.Dhanishta],
-4: [StarsBy.Rohini,StarsBy.Mrigashirsha, StarsBy.Ardra, StarsBy.Shatabhisha],
-5: [StarsBy.Pushya, StarsBy.Ashlesha, StarsBy.Rohini, StarsBy.Rohini],
-6: [StarsBy.Uttara_Phalguni,StarsBy.Hasta,StarsBy.Chitra, StarsBy.Revati],
+0: [StarsBy.Vishakha].map(a => parseInt(a)),
+1: [StarsBy.Purva_Ashadha,StarsBy.Uttara_Ashadha,StarsBy.Shravana,StarsBy.Chitra].map(a => parseInt(a)),
+2: [StarsBy.Dhanishta, StarsBy.Shatabhisha,StarsBy.Purva_Bhadrapada,StarsBy.Uttara_Ashadha].map(a => parseInt(a)),
+3: [StarsBy.Revati, StarsBy.Ashwini, StarsBy.Bharani, StarsBy.Dhanishta].map(a => parseInt(a)),
+4: [StarsBy.Rohini,StarsBy.Mrigashirsha, StarsBy.Ardra, StarsBy.Shatabhisha].map(a => parseInt(a)),
+5: [StarsBy.Pushya, StarsBy.Ashlesha, StarsBy.Rohini, StarsBy.Rohini].map(a => parseInt(a)),
+6: [StarsBy.Uttara_Phalguni,StarsBy.Hasta,StarsBy.Chitra, StarsBy.Revati].map(a => parseInt(a)),
 }
 // page 146 para 2, 4
 export const VeryGoodDaysBy_Day_Stars = {
-0:[StarsBy.Moola, StarsBy.Hasta],
-1:[StarsBy.Shravana, StarsBy.Mrigashirsha],
-2:[StarsBy.Uttara_Bhadrapada,StarsBy.Ashwini],
-3:[StarsBy.Krittika, StarsBy.Anuradha],
-4:[StarsBy.Punarvasu, StarsBy.Pushya],
-5:[StarsBy.Poorva_Phalguni, StarsBy.Revati],
-6:[StarsBy.Swati, StarsBy.Rohini]
+0:[StarsBy.Moola, StarsBy.Hasta].map(a => parseInt(a)),
+1:[StarsBy.Shravana, StarsBy.Mrigashirsha].map(a => parseInt(a)),
+2:[StarsBy.Uttara_Bhadrapada,StarsBy.Ashwini].map(a => parseInt(a)),
+3:[StarsBy.Krittika, StarsBy.Anuradha].map(a => parseInt(a)),
+4:[StarsBy.Punarvasu, StarsBy.Pushya].map(a => parseInt(a)),
+5:[StarsBy.Poorva_Phalguni, StarsBy.Revati].map(a => parseInt(a)),
+6:[StarsBy.Swati, StarsBy.Rohini].map(a => parseInt(a))
 }
 
 // page 145 
 export const GoodDaysBy_Day_thithi = {0 : [8,23,15,30], 1: [9,24],2: [3,6,8,18,21,23,13,28],3: [9,24,12,27],4: [5,20,10,25,11,26],5: [6,11,26,21],6: [4,19,13,14,28,19]}
-export const DagdhaDaysByDay_thithi = { 0 : [12,27] , 1 : [11,26], 2: [10,25], 3: [1,8,9,14,16,23,24,28], 4:[8,23], 5: [7,22], 6:[6,21]};
+export const BadDaysByDay_thithi = { 0 : [12,27] , 1 : [11,26], 2: [10,25], 3: [1,8,9,14,16,23,24,28], 4:[8,23], 5: [7,22], 6:[6,21]};
 export const DaghaSankranthi_Sun_thithi = {  }
 
 //TODO: Page 146 , yoga para with 120 number
