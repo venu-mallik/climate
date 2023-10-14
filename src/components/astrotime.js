@@ -56,7 +56,7 @@ const BodyAdjustedDistances = {
 function computeStrength(record) {
     let day = parseInt(record['weekday']);
     let gdds = VeryGoodDaysBy_Day_Stars[day].includes(record['star']) ? 1 : 0;
-    let gddt = GoodDaysBy_Day_thithi[day].includes(record['thihti']) ? 1 : 0;
+    let gddt = GoodDaysBy_Day_thithi[day].includes(record['thithi']) ? 1 : 0;
     let dlnl = DLNL_Day_Star[day].includes(record['star']) ? 1 : 0;
 
 
@@ -80,7 +80,7 @@ function getValue(obs, date, bodies) {
     })
     let th = record[Body.Moon] - record[Body.Sun];
     record['thithi'] = th < 0 ? parseInt((th + 360) / 12 + 1) : parseInt(1 + (th / 12));
-    record['star'] = parseInt(record[Body.Moon] / 27) + 1;
+    record['star'] = parseInt(parseInt(record[Body.Moon]*60)/800 ) + 1;
     record['weekday'] = time.date.getDay();
 
     let st = computeStrength(record);
@@ -279,6 +279,7 @@ export function AstroScales(props) {
             >
                 Download csv
             </CSVLink>
+            W.I.P , Need to ascertain timezones and dual thithi/star days to improve quality.
             <Table dataSource={data} style={{ width: '100vw' }} scroll={{ x: 1500 }}
                 columns={data.length > 0 ? Object.keys(data[0]).map((a, i) =>
                 ({
