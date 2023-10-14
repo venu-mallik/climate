@@ -5,6 +5,7 @@ import {
 } from 'astronomy-engine';
 
 import {  Select,  Table, Divider } from 'antd';
+import { sachin_odis } from './_datasets';
 import { Stars } from './_panchangerules';
 
 const isSSREnabled = () => typeof window === 'undefined';
@@ -51,13 +52,14 @@ function getValue(obs, date) {
     Object.values(bodies).map((b) => {
         let eq = Equator(b, time, obs, true, true);
         let hr = Horizon(time, obs, eq.ra, eq.dec, 'normal');
-        let c = Number(eq.ra * 15) - Number(lahiri);
         let d = Number(hr.ra * 15) - Number(lahiri);
         record[b] = Number(Math.abs(d % 360)).toFixed(2);
 
     })
+    let th = record[Body.Moon] - record[Body.Sun];
+    record['thithi'] = th < 0 ? Number(((th+360)/12)+1).toFixed(0) : Number(1 +(th/12)).toFixed(0);
 
-    let nn = getNodes(time, lahiri)
+    let nn = getNodes(time, lahiri);
     return { ...record, ...nn };
 }
 
@@ -119,8 +121,9 @@ export function AstroScales(props) {
     const [years, setYears] = useState([]);
     const [times, setTimes] = useState([]);
     const [saveData, setSaveData] = useState([]);
+    const [statebodies,setBodies] = useState([Body.Sun, Body.Moon]);
     const [mode, setMode] = useState("EarthQuake");
-    const modes = ['EarthQuake',"Browse"];
+    const modes = ['EarthQuake',"Browse","Sachin_ODIs"];
 
     const [transform, setTransform] = useState("degree");
     const transforms = ["degree", "d1", "d9", "star","exal", "debil", "vargottama"]
@@ -149,8 +152,12 @@ export function AstroScales(props) {
         let arr = []
         dates.map((d, _) => {
             //console.log(obs)
-            let r = getValue(obs, d);
-            arr.push({ ...r, time: new AstroTime(d).toString() })
+            let r = getValue(obs, d.date);
+            let k = { ...r, time: new AstroTime(d.date).toString() };
+            if(mode === modes[2]){
+                k['score'] = d.score;
+            }
+            arr.push(k)
         })
         setData(arr);
         setSaveData(arr);
@@ -161,12 +168,18 @@ export function AstroScales(props) {
         if (mode === modes[0]) {
             Object.keys(earthQuakeTimes).map((b, _) => {
                 let x = new Date(b);
-                a.push(x)
+                a.push({date:x})
             })
         }
-        if(mode === modes[1]){
+        else if(mode === modes[1]){
             setYears([]);
             setData([]);
+        }
+        else if(mode === modes[2]){
+            sachin_odis.map((rec,_)=> {
+                let x = new Date(rec['Start Date'])
+                a.push({date : x, score: rec.Runs});
+            })
         }
         setDates(a);
     }, [mode])
@@ -218,17 +231,17 @@ export function AstroScales(props) {
                 })}
             </Select>
             <Divider></Divider>
-            {
+            {/*
                 
                 data.map((rec,id)=>{
                     return <SkyCanvas  row={rec}  key={"canvas"+id}></SkyCanvas>
                 })
-            }
+            */}
             <Table dataSource={data} style={{width: '100vw'}} scroll={{x : 1500}}
                 columns={data.length > 0 ? Object.keys(data[0]).map((a, i) =>
                     ({ 'title': a, 'dataIndex': a, 'key': a , 'fixed' : a === "time" ? "right": false,
                         "render":  function (t,r,i) {
-                            if(a === 'time') return t;
+                            if(['time','thithi'].includes(a)) return t;
                             return doTransformer(t, transform);
 
                         } }))
