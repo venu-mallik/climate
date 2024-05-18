@@ -4,7 +4,7 @@ import {
     , Body, AstroTime, NextGlobalSolarEclipse, SearchLunarEclipse, MoonPhase, SearchMoonNode
 } from 'astronomy-engine';
 
-import { Select, Table, Divider } from 'antd';
+import { Select, Table, Divider, Switch } from 'antd';
 import { sachin_odis } from './_datasets';
 import {
     GoodDaysBy_Day_thithi,
@@ -12,8 +12,14 @@ import {
     BadDaysByDay_thithi, BadDaysBy_Day_Stars, DLNL_Day_Star
 } from './_panchangerules';
 import { CSVLink } from "react-csv";
+//import * as perspective from "https://cdn.jsdelivr.net/npm/@finos/perspective/dist/cdn/perspective.js";
+import perspective from '@finos/perspective';
 
 const isSSREnabled = () => typeof window === 'undefined';
+
+function numberRange (start, end) {
+    return new Array(end - start).fill().map((d, i) => i + start);
+}
 
 function getLahari(d) {
 
@@ -74,7 +80,7 @@ function getValue(obs, date, bodies) {
     Object.values(bodies).map((b) => {
         let eq = Equator(b, time, obs, true, true);
         let hr = Horizon(time, obs, eq.ra, eq.dec, 'normal');
-        let d = Number(hr.ra * 15) - Number(lahiri);
+        let d = Number(hr.ra * 15) +360  - Number(lahiri);
         record[b] = Number(Math.abs(d % 360)).toFixed(2);
 
     })
@@ -85,7 +91,7 @@ function getValue(obs, date, bodies) {
 
     let st = computeStrength(record);
     let nn = getNodes(time, lahiri);
-    return { ...record, ...nn, ...st };
+    return { ...record, ...nn };
 }
 
 function doTransformer(t, flag) {
@@ -136,8 +142,7 @@ const SkyCanvas = (props) => {
         <canvas ref={canvas} title={props?.row?.time} height={200} width={200} />
     );
 }
-
-
+var pworker = perspective.worker();
 export function AstroScales(props) {
 
     const [data, setData] = useState([]);
@@ -145,9 +150,10 @@ export function AstroScales(props) {
     const [years, setYears] = useState([]);
     const [times, setTimes] = useState([]);
     const [saveData, setSaveData] = useState([]);
-    const [bodies, setBodies] = useState([Body.Sun, Body.Moon]);
-    const [mode, setMode] = useState("Sachin_ODIs");
-    const modes = ['EarthQuake', "Browse", "Sachin_ODIs"];
+    const [bodies, setBodies] = useState([Body.Pluto, Body.Saturn, Body.Jupiter, Body.Uranus]);
+    const [vis, setVis] = useState(false);
+    const [mode, setMode] = useState("Covid");
+    const modes = ['EarthQuake', "Browse", "Sachin_ODIs", "Covid"];
 
     const [transform, setTransform] = useState("degree");
     const transforms = ["degree", "d1", "d9", "star", "exal", "debil", "vargottama"]
@@ -205,12 +211,43 @@ export function AstroScales(props) {
                 a.push({ date: x, score: rec.Runs });
             })
         }
+        else if(mode === modes[3]) {
+            setData([]);
+            numberRange(1975,2025).map((y, i) => {
+                let d = new Date(`2000-01-01T00:00:00.000+05:30`);
+                d.setFullYear(y);
+                let start = new AstroTime(new Date(d));
+                Array(52).fill().map((_, index) => {
+                    a.push(start.AddDays(7))
+                })
+                setTimes([...times, ...a]);
+            })
+        }
         setDates(a);
     }, [mode])
+
+    useEffect(()=> {
+        const fnpw = async () => {
+        const viewer = document.querySelector("perspective-viewer");
+
+        const tabledata = await pworker.table(data, { index: "time" });
+        console.log(tabledata, tabledata.size() , data, viewer, viewer.id);
+        await viewer.load(tabledata);
+        //viewer.restore({ theme: "Pro Dark" });
+        await viewer.restore({ plugin: "Y Area", columns: ["Pluto","Saturn","Jupiter"],
+        title: "what is the common in 1983 and 2020? HIV/covid and outer planet conjunction namely pluto, saturn and jupiter" });
+        
+      }
+        if(vis){
+            fnpw();
+        }
+    
+    },[vis])
 
     return (
         <>
 
+            <Switch size='default'  checked={vis} onChange={() => setVis(!vis)} ></Switch>
             <Select style={{ width: 200 }} title={""}
                 placeholder={'Select'} allowClear showSearch
                 value={mode}
@@ -240,6 +277,7 @@ export function AstroScales(props) {
                     return <Select.Option key={b} value={b} >{b}</Select.Option>
                 })}
             </Select>
+
             {mode === "Browse" &&
                 <Select style={{ width: 500 }} title={""}
                     placeholder={'Select Years'} allowClear showSearch
@@ -279,7 +317,17 @@ export function AstroScales(props) {
             >
                 Download csv
             </CSVLink>
-            W.I.P , Need to ascertain timezones and dual thithi/star days to improve quality.
+            
+            {vis ? 
+            <>
+            <div style={{width: 800, height:800}}  > 
+
+            <perspective-viewer style={{width: 1200, height:800}} id="perspectiveviewer"  ></perspective-viewer>
+            </div>
+            
+            </>
+            
+            :
             <Table dataSource={data} style={{ width: '100vw' }} scroll={{ x: 1500 }}
                 columns={data.length > 0 ? Object.keys(data[0]).map((a, i) =>
                 ({
@@ -290,7 +338,7 @@ export function AstroScales(props) {
 
                     }
                 }))
-                    : []}></Table>
+                    : []}></Table>}
         </>
     )
 
