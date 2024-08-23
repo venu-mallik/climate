@@ -4,8 +4,8 @@ import {
     , Body, AstroTime, NextGlobalSolarEclipse, SearchLunarEclipse, MoonPhase, SearchMoonNode
 } from 'astronomy-engine';
 
-import { Select, Table, Divider, Switch, Flex, DatePicker } from 'antd';
-import { sachin_odis } from './_datasets';
+import { Select, Table, Divider, Switch, Flex, DatePicker, Input, TextArea } from 'antd';
+import { sachin_odis, firelist1 } from './_datasets';
 import {
     GoodDaysBy_Day_thithi,
     VeryGoodDaysBy_Day_Stars,
@@ -14,6 +14,7 @@ import {
 import { CSVLink } from "react-csv";
 //import * as perspective from "https://cdn.jsdelivr.net/npm/@finos/perspective/dist/cdn/perspective.js";
 import perspective from '@finos/perspective';
+import dayjs from 'dayjs';
 
 const isSSREnabled = () => typeof window === 'undefined';
 
@@ -147,6 +148,7 @@ const SkyCanvas = (props) => {
 var pworker = perspective.worker();
 export function AstroScales(props) {
 
+    const [dateFormat, setDateFormat] = useState("DD-MM-YYYY");
     const [data, setData] = useState([]);
     const [dates, setDates] = useState([]);
     const [years, setYears] = useState([]);
@@ -154,8 +156,8 @@ export function AstroScales(props) {
     const [saveData, setSaveData] = useState([]);
     const [bodies, setBodies] = useState([Body.Pluto, Body.Saturn, Body.Jupiter, Body.Uranus]);
     const [vis, setVis] = useState(false);
-    const [mode, setMode] = useState("Covid");
-    const modes = ['EarthQuake', "Browse", "Sachin_ODIs", "Covid", "Paste_Dates"];
+    const [mode, setMode] = useState("Firelist1");
+    const modes = ["Firelist1", 'EarthQuake', "Browse", "Sachin_ODIs", "Covid", "Paste_Dates"];
 
     const [transform, setTransform] = useState("degree");
     const transforms = ["degree", "d1", "d9", "star", "exal", "debil", "vargottama", "gandanta"]
@@ -198,7 +200,12 @@ export function AstroScales(props) {
 
     useEffect(() => {
         let a = [];
-        if (mode === modes[0]) {
+        if(mode === "Firelist1"){
+            firelist1.map((v,i) => {
+                a.push({date: dayjs(v["Date"], "YYYY-MM-DD").toDate()})
+            });
+        }
+        else if (mode === modes[0]) {
             Object.keys(earthQuakeTimes).map((b, _) => {
                 let x = new Date(b);
                 a.push({ date: x })
