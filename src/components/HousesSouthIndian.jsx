@@ -320,7 +320,7 @@ export default function HousesSouthIndian() {
         style={{ width: 180 }}
       />
       <Select 
-        value={resolution} 
+        value={resolution}
         onChange={setResolution}
         variant="filled"
         style={{ width: 65 }}
