@@ -16,6 +16,10 @@ export default function App({ Component, pageProps }) {
         src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"
         strategy="beforeInteractive"
       />
+      <Script
+        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"
+        strategy="beforeInteractive"
+      />
       <Component {...pageProps} />
     </>
   )

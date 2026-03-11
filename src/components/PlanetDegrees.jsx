@@ -1,9 +1,14 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Select, Button, DatePicker, Card, Space, Tag } from 'antd';
 import { DownloadOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { Body, AstroTime, Equator, Horizon, Observer } from 'astronomy-engine';
+import { Observer } from 'astronomy-engine';
 import dayjs from 'dayjs';
+import dynamic from 'next/dynamic';
 import { planets, generateTimeseriesData, exportToCSV, getLahari } from './PlanetUtils';
+
+const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
+
+const { RangePicker } = DatePicker;
 
 const Stars = {
   1: 'Ashwini', 2: 'Bharani', 3: 'Krittika', 4: 'Rohini',
@@ -90,10 +95,15 @@ function getExalDebil(planet, degree) {
 }
 
 export default function PlanetDegrees() {
-  const canvasRef = useRef(null);
-  const chartRef = useRef(null);
+  const [dateRange, setDateRange] = useState(() => {
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 90);
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 90);
+    return [startDate, endDate];
+  });
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [resolution, setResolution] = useState('1day');
   const [selectedPlanets, setSelectedPlanets] = useState(
     planets.map(p => p.name)
@@ -104,178 +114,130 @@ export default function PlanetDegrees() {
   const obs = new Observer(defaultCity.lat, defaultCity.lon, defaultCity.elevation);
 
   useEffect(() => {
-    const l = getLahari(selectedDate);
+    const midDate = new Date((dateRange[0].getTime() + dateRange[1].getTime()) / 2);
+    const l = getLahari(midDate);
     setLahiri(l);
-  }, [selectedDate]);
+  }, [dateRange]);
 
   useEffect(() => {
+    const startDate = dateRange[0];
+    const endDate = dateRange[1];
+    const diffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    const intervalMinutes = Math.max(60, Math.floor(diffDays * 60 / 500));
+
     const data = generateTimeseriesData(
-      selectedDate,
-      60,
-      60,
+      startDate,
+      diffDays,
+      intervalMinutes,
       resolution,
       planets.filter(p => selectedPlanets.includes(p.name)),
       obs,
       lahiri
     );
     setChartData(data);
-  }, [selectedDate, resolution, selectedPlanets, lahiri]);
+  }, [dateRange, resolution, selectedPlanets, lahiri]);
 
-  useEffect(() => {
-    if (chartData.length === 0 || !canvasRef.current) return;
+  const plotData = planets
+    .filter(p => selectedPlanets.includes(p.name))
+    .map(planet => {
+      const xValues = chartData.map(row => new Date(row.date));
+      const yValues = chartData.map(row => row[planet.name]);
 
-    if (chartRef.current) {
-      chartRef.current.destroy();
-    }
-
-    const ctx = canvasRef.current.getContext('2d');
-    const datasets = planets
-      .filter(p => selectedPlanets.includes(p.name))
-      .map(planet => {
-        const dataPoints = chartData.map(row => {
-          const degree = row[planet.name];
-          const exalDebil = getExalDebil(planet.name, degree);
-          let pointStyle = 'circle';
-          let pointRadius = 3;
-          let pointColor = planet.color;
-
-          if (exalDebil === 'EXA') {
-            pointStyle = 'star';
-            pointRadius = 6;
-          } else if (exalDebil === 'DEB') {
-            pointStyle = 'triangle';
-            pointRadius = 5;
-          }
-
-          return {
-            x: new Date(row.date),
-            y: degree,
-            planet: planet.name,
-            degree,
-            pointStyle,
-            pointRadius,
-            pointColor
-          };
-        });
-
-        return {
-          label: planet.name,
-          data: dataPoints,
-          borderColor: planet.color,
-          backgroundColor: planet.color,
-          borderWidth: 1.5,
-          pointRadius: dataPoints.map(p => p.pointRadius),
-          pointStyle: dataPoints.map(p => p.pointStyle),
-          pointBackgroundColor: dataPoints.map(p => p.pointColor),
-          pointBorderColor: dataPoints.map(p => p.pointColor),
-          tension: 0.3,
-          fill: false
-        };
-      });
-
-    chartRef.current = new window.Chart(ctx, {
-      type: 'line',
-      data: { datasets },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: 'index',
-          intersect: false
-        },
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              color: '#fff',
-              usePointStyle: true,
-              padding: 15
-            }
-          },
-          tooltip: {
-            callbacks: {
-              title: (items) => new Date(items[0].parsed.x).toLocaleString(),
-              label: (item) => {
-                const degree = item.parsed.y;
-                const planet = item.dataset.label;
-                const d1 = getD1(degree);
-                const d9 = getD9(degree);
-                const star = getStar(degree);
-                const starName = Stars[star] || '';
-                const varg = getVargottama(degree);
-                const exalDebil = getExalDebil(planet, degree);
-                const gand = getGandanta(degree);
-
-                let label = `${planet}: ${degree.toFixed(2)}°`;
-                label += ` | D1:${d1} D9:${d9}`;
-                label += ` | ${star} ${starName}`;
-                if (varg) label += ' | VAR';
-                if (exalDebil) label += ` | ${exalDebil}`;
-                if (gand) label += ' | GAN';
-                return label;
-              }
-            }
-          },
-          title: {
-            display: true,
-            text: `Planetary Positions (${resolution}) - ±60 days from ${selectedDate.toLocaleDateString()}`,
-            color: '#fff',
-            font: { size: 14 }
-          }
-        },
-        scales: {
-          x: {
-            type: 'time',
-            time: {
-              unit: resolution === '1day' || resolution === '1week' ? 'day' : 
-                    resolution === '1month' || resolution === '3month' || resolution === '6month' ? 'month' : 'hour',
-              displayFormats: {
-                day: 'MMM dd',
-                week: 'MMM dd',
-                month: 'MMM yyyy',
-                hour: 'HH:mm'
-              }
-            },
-            grid: { color: 'rgba(255,255,255,0.1)' },
-            ticks: { color: '#aaa' }
-          },
-          y: {
-            min: 0,
-            max: 360,
-            grid: { color: 'rgba(255,255,255,0.1)' },
-            ticks: {
-              color: '#aaa',
-              callback: (value) => `${value}°`
-            }
-          }
-        }
-      }
+      return {
+        x: xValues,
+        y: yValues,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: planet.name,
+        line: { color: planet.color, width: 1.5 },
+        marker: { size: 4 }
+      };
     });
 
-    return () => {
-      if (chartRef.current) {
-        chartRef.current.destroy();
-      }
-    };
-  }, [chartData, selectedPlanets, resolution]);
+  const layout = {
+    title: {
+      text: `Planetary Positions (${resolution}) - ${dateRange[0].toLocaleDateString()} to ${dateRange[1].toLocaleDateString()}`,
+      font: { size: 14, color: '#fff' }
+    },
+    xaxis: {
+      title: 'Date',
+      gridcolor: 'rgba(255,255,255,0.1)',
+      tickcolor: '#aaa',
+      tickfont: { color: '#aaa' },
+      titlefont: { color: '#aaa' },
+      rangeselector: {
+        buttons: [
+          { count: 1, label: '1d', step: 'day', stepmode: 'backward' },
+          { count: 7, label: '7d', step: 'day', stepmode: 'backward' },
+          { count: 30, label: '30d', step: 'day', stepmode: 'backward' },
+          { count: 90, label: '90d', step: 'day', stepmode: 'backward' },
+          { count: 180, label: '6m', step: 'month', stepmode: 'backward' },
+          { count: 1, label: '1y', step: 'year', stepmode: 'backward' },
+          { count: 5, label: '5y', step: 'year', stepmode: 'backward' },
+          { step: 'all', label: 'All' }
+        ],
+        bgcolor: '#333',
+        activecolor: '#666',
+        font: { color: '#fff' }
+      },
+      rangeslider: { visible: true },
+      type: 'date'
+    },
+    yaxis: {
+      title: 'Degrees',
+      gridcolor: 'rgba(255,255,255,0.1)',
+      tickcolor: '#aaa',
+      tickfont: { color: '#aaa' },
+      titlefont: { color: '#aaa' },
+      range: [0, 360],
+      tickvals: Array.from({ length: 13 }, (_, i) => i * 30),
+      ticktext: Array.from({ length: 13 }, (_, i) => `${i * 30}°`)
+    },
+    paper_bgcolor: '#1f1f1f',
+    plot_bgcolor: '#1f1f1f',
+    font: { color: '#fff' },
+    legend: {
+      x: 0,
+      y: 1,
+      font: { color: '#fff' },
+      bgcolor: 'rgba(0,0,0,0.5)'
+    },
+    margin: { l: 60, r: 40, t: 60, b: 80 },
+    height: 500,
+    hovermode: 'x unified'
+  };
+
+  const config = {
+    responsive: true,
+    displayModeBar: true,
+    displaylogo: false,
+    modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+    modeBarButtonsToAdd: ['toggleSpikelines']
+  };
 
   const handlePrev = () => {
-    const days = resolution === '1day' ? 60 : resolution === '1week' ? 14 : resolution === '1month' ? 3 : 60;
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() - days);
-    setSelectedDate(newDate);
+    const diffDays = Math.ceil((dateRange[1] - dateRange[0]) / (1000 * 60 * 60 * 24));
+    const shiftDays = Math.max(30, Math.floor(diffDays / 2));
+    const newStart = new Date(dateRange[0]);
+    newStart.setDate(dateRange[0].getDate() - shiftDays);
+    const newEnd = new Date(dateRange[0]);
+    newEnd.setDate(dateRange[0].getDate() - 1);
+    setDateRange([newStart, newEnd]);
   };
 
   const handleNext = () => {
-    const days = resolution === '1day' ? 60 : resolution === '1week' ? 14 : resolution === '1month' ? 3 : 60;
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + days);
-    setSelectedDate(newDate);
+    const diffDays = Math.ceil((dateRange[1] - dateRange[0]) / (1000 * 60 * 60 * 24));
+    const shiftDays = Math.max(30, Math.floor(diffDays / 2));
+    const newStart = new Date(dateRange[1]);
+    newStart.setDate(dateRange[1].getDate() + 1);
+    const newEnd = new Date(dateRange[1]);
+    newEnd.setDate(dateRange[1].getDate() + shiftDays);
+    setDateRange([newStart, newEnd]);
   };
 
-  const handleDateChange = (date) => {
-    if (date) {
-      setSelectedDate(date.toDate());
+  const handleDateChange = (dates) => {
+    if (dates && dates.length === 2) {
+      setDateRange([dates[0].toDate(), dates[1].toDate()]);
     }
   };
 
@@ -294,17 +256,26 @@ export default function PlanetDegrees() {
       });
       return newRow;
     });
-    const filename = `planet_degrees_${selectedDate.toISOString().split('T')[0]}_${resolution}.csv`;
+    const filename = `planet_degrees_${dateRange[0].toISOString().split('T')[0]}_${dateRange[1].toISOString().split('T')[0]}_${resolution}.csv`;
     exportToCSV(csvData, filename);
   };
 
   return (
     <Card>
       <Space wrap style={{ marginBottom: 16 }}>
-        <DatePicker
-          value={dayjs(selectedDate)}
+        <RangePicker
+          value={[dayjs(dateRange[0]), dayjs(dateRange[1])]}
           onChange={handleDateChange}
-          placeholder="Select date"
+          picker="date"
+          allowClear={false}
+          presets={[
+            { label: 'Today', value: [dayjs(), dayjs()] },
+            { label: '-90d/+90d', value: [dayjs().subtract(90, 'day'), dayjs().add(90, 'day')] },
+            { label: '-6m/+6m', value: [dayjs().subtract(180, 'day'), dayjs().add(180, 'day')] },
+            { label: '-1y/+1y', value: [dayjs().subtract(365, 'day'), dayjs().add(365, 'day')] },
+            { label: '-2y/+2y', value: [dayjs().subtract(730, 'day'), dayjs().add(730, 'day')] },
+            { label: '-5y/+5y', value: [dayjs().subtract(1825, 'day'), dayjs().add(1825, 'day')] },
+          ]}
         />
         <Select value={resolution} style={{ width: 120 }} onChange={setResolution}>
           {resolutions.map(r => (
@@ -328,19 +299,19 @@ export default function PlanetDegrees() {
       </Space>
 
       <div style={{ marginBottom: 12, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 11, color: '#888' }}>Point Styles: </span>
-        <Tag style={{ fontSize: 10 }}>● Normal</Tag>
-        <Tag style={{ fontSize: 10 }}>★ Exalted</Tag>
-        <Tag style={{ fontSize: 10 }}>▼ Debilitated</Tag>
+        <span style={{ fontSize: 11, color: '#888' }}>Use range selector buttons or slider to zoom</span>
       </div>
 
-      <div style={{ height: 500 }}>
-        <canvas ref={canvasRef} />
-      </div>
+      <Plot
+        data={plotData}
+        layout={layout}
+        config={config}
+        style={{ width: '100%', height: '500px' }}
+      />
 
       <div style={{ marginTop: 16 }}>
         <Tag>Lahiri Ayanamsa: {lahiri.toFixed(2)}°</Tag>
-        <Tag>Date Range: ±60 days</Tag>
+        <Tag>Date Range: {dateRange[0].toLocaleDateString()} - {dateRange[1].toLocaleDateString()}</Tag>
         <Tag>Data Points: {chartData.length}</Tag>
         <Tag>Location: {defaultCity.name} ({defaultCity.lat}°, {defaultCity.lon}°)</Tag>
       </div>
