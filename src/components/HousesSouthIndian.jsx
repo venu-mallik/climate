@@ -70,6 +70,14 @@ function getPositionInSign(degree) {
   return degree % 30;
 }
 
+function decimalToHms(decimal) {
+  const hours = Math.floor(decimal);
+  const minutesDecimal = (decimal - hours) * 60;
+  const minutes = Math.floor(minutesDecimal);
+  const seconds = Math.round((minutesDecimal - minutes) * 60);
+  return `${hours}°${minutes}'${seconds}"`;
+}
+
 export default function HousesSouthIndian() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [resolution, setResolution] = useState('1day');
@@ -277,8 +285,8 @@ export default function HousesSouthIndian() {
       title: 'Position',
       dataIndex: 'positionInSign',
       key: 'pos',
-      width: 60,
-      render: (v) => <span style={{ fontSize: 10 }}>{v.toFixed(2)}°</span>
+      width: 70,
+      render: (v) => <span style={{ fontSize: 10 }}>{decimalToHms(v)}</span>
     }
   ];
 

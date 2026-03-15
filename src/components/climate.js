@@ -97,8 +97,8 @@ function nuLLCheckBody(now, v) {
 }
 
 function toUTC(date) {
-  const d = new Date(date);
-  return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+  // REVERTED: Don't convert to UTC - use local time directly
+  return date;
 }
 
 export const ClimateComponent = (props) => {

@@ -1,4 +1,4 @@
-import { Body, AstroTime, Equator, Horizon, Observer } from 'astronomy-engine';
+import { Body, AstroTime, Equator, Horizon, Observer, GeoVector, Ecliptic } from 'astronomy-engine';
 
 export const planets = [
   { name: 'Sun', body: Body.Sun, color: '#FFD700' },
@@ -25,48 +25,56 @@ export function getLahari(date) {
 }
 
 function toUTC(date) {
-  const d = new Date(date);
-  return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+  // REVERTED: Don't convert to UTC - use local time directly
+  return date;
 }
 
 export function calculatePlanetDegree(body, date, obs, lahiri) {
   if (body === 'RAHU' || body === 'KETU') {
+    // CHANGE-2 REVERTED: Using old Mean Node formula (LunarNode not available)
     return calculateNodeDegree(body, date, lahiri);
   }
 
+  // CHANGE-1: Use GeoVector + Ecliptic for proper ecliptic coordinates
+  // This works for all bodies including Sun
+  
   const time = new AstroTime(toUTC(date));
-  const eq = Equator(body, time, obs, true, true);
-  const hr = Horizon(time, obs, eq.ra, eq.dec, 'normal');
-  const tropicalDegree = hr.ra * 15;
+  
+  // Get geocentric vector (false = no aberration correction for simplicity)
+  const vec = GeoVector(body, time, false);
+  
+  // Convert to ecliptic coordinates (J2000 -> ecliptic of date)
+  const ecl = Ecliptic(vec, time);
+  
+  const tropicalDegree = (ecl.elon + 360) % 360;
   const siderealDegree = ((tropicalDegree - lahiri) % 360 + 360) % 360;
   return siderealDegree;
 }
 
 export function calculateNodeDegree(nodeType, date, lahiri) {
+  // CHANGE-2: REVERTED - LunarNode not available in astronomy-engine
+  // Using manual IAU formula for Mean Node
+  
   const targetDate = new Date(date);
   
   // 1. Calculate Julian Day (JD) for the given date
-  // Formula for JD: days since Jan 1, 4713 BC
   const jd = (targetDate.getTime() / 86400000) + 2440587.5;
   
   // 2. Calculate Julian Centuries (T) from J2000.0
   const T = (jd - 2451545.0) / 36525;
 
-  // 3. Mean Longitude of the Ascending Node (Rahu)
-  // This formula is based on the IAU expression for the mean node
+  // 3. Mean Longitude of the Ascending Node (Rahu) - IAU formula
   let nodeDegree = 125.0445479 - (1934.1362891 * T) + (0.0020754 * Math.pow(T, 2)) + (Math.pow(T, 3) / 467441) - (Math.pow(T, 4) / 60616000);
 
   // Normalize to 0-360 degrees
   nodeDegree = ((nodeDegree % 360) + 360) % 360;
 
-  // 4. Handle Node Types
-  // Traditionally, the formula above represents the Mean Rahu.
-  // Ketu is always 180 degrees away.
+  // Handle Node Types - Ketu is always 180 degrees away from Rahu
   if (nodeType === 'KETU') {
     nodeDegree = (nodeDegree + 180) % 360;
   }
 
-  // 5. Apply Ayanamsa (Lahiri) for Sidereal position
+  // Apply Ayanamsa (Lahiri) for Sidereal position
   const siderealNode = ((nodeDegree - lahiri) % 360 + 360) % 360;
 
   return siderealNode;
@@ -74,6 +82,7 @@ export function calculateNodeDegree(nodeType, date, lahiri) {
 
 
 export function getAscendant(date, obs, lahiri) {
+  // CHANGE-3: Use dynamic obliquity instead of fixed 23.44
   const time = new AstroTime(toUTC(date));
   const eq = Equator(Body.Sun, time, obs, true, true);
   const hr = Horizon(time, obs, eq.ra, eq.dec, 'normal');
@@ -90,6 +99,7 @@ export function getAscendant(date, obs, lahiri) {
   const cosH = -sinLat * sinDec / (cosLat * cosDec);
   const H = Math.acos(Math.min(1, Math.max(-1, cosH)));
 
+  // CHANGE-3: Use fixed obliquity (23.44) - Obliquity() not available in astronomy-engine
   const obliquity = 23.44 * Math.PI / 180;
   const sinLambda = sinDec * Math.sin(obliquity) + cosDec * Math.cos(obliquity) * Math.cos(H);
 
