@@ -93,7 +93,12 @@ function correctValuesWithSpaceTime(v, tz) {
 }
 
 function nuLLCheckBody(now, v) {
-  return v === null ? new AstroTime(now) : v;
+  return v === null ? now : v;
+}
+
+function toUTC(date) {
+  const d = new Date(date);
+  return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
 }
 
 export const ClimateComponent = (props) => {

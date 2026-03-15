@@ -24,12 +24,17 @@ export function getLahari(date) {
   return Number(23.5);
 }
 
+function toUTC(date) {
+  const d = new Date(date);
+  return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+}
+
 export function calculatePlanetDegree(body, date, obs, lahiri) {
   if (body === 'RAHU' || body === 'KETU') {
     return calculateNodeDegree(body, date, lahiri);
   }
 
-  const time = new AstroTime(date);
+  const time = new AstroTime(toUTC(date));
   const eq = Equator(body, time, obs, true, true);
   const hr = Horizon(time, obs, eq.ra, eq.dec, 'normal');
   const tropicalDegree = hr.ra * 15;
@@ -69,7 +74,7 @@ export function calculateNodeDegree(nodeType, date, lahiri) {
 
 
 export function getAscendant(date, obs, lahiri) {
-  const time = new AstroTime(date);
+  const time = new AstroTime(toUTC(date));
   const eq = Equator(Body.Sun, time, obs, true, true);
   const hr = Horizon(time, obs, eq.ra, eq.dec, 'normal');
 
