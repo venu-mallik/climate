@@ -136,16 +136,102 @@ export default function HousesSouthIndian() {
   }, [planetData]);
 
   const handlePrev = () => {
-    const days = resolution === '1day' ? 1 : resolution === '1week' ? 7 : resolution === '1month' ? 30 : 1;
     const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() - days);
+    
+    switch (resolution) {
+      case '1min':
+        newDate.setMinutes(newDate.getMinutes() - 1);
+        break;
+      case '5min':
+        newDate.setMinutes(newDate.getMinutes() - 5);
+        break;
+      case '15min':
+        newDate.setMinutes(newDate.getMinutes() - 15);
+        break;
+      case '30min':
+        newDate.setMinutes(newDate.getMinutes() - 30);
+        break;
+      case '60min':
+        newDate.setHours(newDate.getHours() - 1);
+        break;
+      case '1day':
+        newDate.setDate(newDate.getDate() - 1);
+        break;
+      case '1week':
+        newDate.setDate(newDate.getDate() - 7);
+        break;
+      case '1month':
+        newDate.setMonth(newDate.getMonth() - 1);
+        break;
+      case '3month':
+        newDate.setMonth(newDate.getMonth() - 3);
+        break;
+      case '6month':
+        newDate.setMonth(newDate.getMonth() - 6);
+        break;
+      case '1year':
+        newDate.setFullYear(newDate.getFullYear() - 1);
+        break;
+      case '5year':
+        newDate.setFullYear(newDate.getFullYear() - 5);
+        break;
+      case '10year':
+        newDate.setFullYear(newDate.getFullYear() - 10);
+        break;
+      default:
+        newDate.setDate(newDate.getDate() - 1);
+    }
+    
     setSelectedDate(newDate);
   };
 
   const handleNext = () => {
-    const days = resolution === '1day' ? 1 : resolution === '1week' ? 7 : resolution === '1month' ? 30 : 1;
     const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + days);
+    
+    switch (resolution) {
+      case '1min':
+        newDate.setMinutes(newDate.getMinutes() + 1);
+        break;
+      case '5min':
+        newDate.setMinutes(newDate.getMinutes() + 5);
+        break;
+      case '15min':
+        newDate.setMinutes(newDate.getMinutes() + 15);
+        break;
+      case '30min':
+        newDate.setMinutes(newDate.getMinutes() + 30);
+        break;
+      case '60min':
+        newDate.setHours(newDate.getHours() + 1);
+        break;
+      case '1day':
+        newDate.setDate(newDate.getDate() + 1);
+        break;
+      case '1week':
+        newDate.setDate(newDate.getDate() + 7);
+        break;
+      case '1month':
+        newDate.setMonth(newDate.getMonth() + 1);
+        break;
+      case '3month':
+        newDate.setMonth(newDate.getMonth() + 3);
+        break;
+      case '6month':
+        newDate.setMonth(newDate.getMonth() + 6);
+        break;
+      case '1year':
+        newDate.setFullYear(newDate.getFullYear() + 1);
+        break;
+      case '5year':
+        newDate.setFullYear(newDate.getFullYear() + 5);
+        break;
+      case '10year':
+        newDate.setFullYear(newDate.getFullYear() + 10);
+        break;
+      default:
+        newDate.setDate(newDate.getDate() + 1);
+    }
+    
     setSelectedDate(newDate);
   };
 
