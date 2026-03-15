@@ -22,9 +22,16 @@ export default function Home() {
               {key: 1, label: 'Climate'},
               {key: 2, label: 'Time Scales'},
               {key: 3, label: 'Planet Degrees'},
-              {key: 4, label: 'Sky'}
+              {key: 4, label: 'Sky'},
+              {key: 5, label: 'Toll Dashboard'}
             ]}
-              onClick={(e) => { setActiveTab(e.key) }} />
+              onClick={(e) => { 
+                if (e.key === '5') {
+                  window.location.href = '/toll-dashboard.html';
+                } else {
+                  setActiveTab(e.key)
+                }
+              }} />
           <Layout.Content>
 
                 <br></br>
