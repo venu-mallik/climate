@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>India Toll Plaza Analytics</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 1800px; margin: 0 auto; padding: 10px; }
+        header { text-align: center; padding: 10px 0; border-bottom: 1px solid #334155; margin-bottom: 12px; }
+        h1 { font-size: 1.4rem; background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { color: #94a3b8; margin-top: 4px; font-size: 0.8rem; }
+        .author { color: #64748b; font-size: 0.7rem; margin-top: 2px; }
+        
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }
+        .kpi-card { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 8px; padding: 10px; border: 1px solid #475569; }
+        .kpi-value { font-size: 1.1rem; font-weight: bold; color: #38bdf8; }
+        .kpi-label { color: #94a3b8; margin-top: 2px; font-size: 0.7rem; }
+        
+        .tabs { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; border-bottom: 1px solid #334155; }
+        .tab { padding: 8px 14px; background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.85rem; border-bottom: 2px solid transparent; white-space: nowrap; }
+        .tab.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .sub-tabs { display: flex; gap: 3px; margin-bottom: 12px; background: #1e293b; padding: 8px; border-radius: 8px; flex-wrap: wrap; }
+        .sub-tab { padding: 6px 14px; background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.8rem; border-radius: 4px; }
+        .sub-tab.active { background: #3b82f6; color: white; }
+        
+        .filter-section { background: #1e293b; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #334155; }
+        .filter-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        .filter-group { display: flex; flex-direction: column; gap: 4px; }
+        .filter-group label { color: #94a3b8; font-size: 0.75rem; font-weight: 600; }
+        select, input { background: #334155; color: #e2e8f0; border: 1px solid #475569; padding: 6px 10px; border-radius: 5px; font-size: 0.85rem; min-width: 140px; }
+        input[type="number"] { min-width: 90px; }
+        .btn { background: #3b82f6; color: white; border: none; padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 0.85rem; }
+        .btn:hover { background: #2563eb; }
+        .btn-clear { background: #64748b; }
+        
+        .stats-bar { display: flex; gap: 15px; margin-bottom: 15px; color: #94a3b8; font-size: 0.85rem; }
+        
+        .chart-section { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .chart-card { background: #1e293b; border-radius: 10px; padding: 12px; border: 1px solid #334155; }
+        .chart-title { font-size: 1rem; margin-bottom: 12px; color: #f1f5f9; }
+        .full-width { grid-column: 1 / -1; }
+        
+        .table-container { background: #1e293b; border-radius: 10px; padding: 12px; border: 1px solid #334155; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th { background: #334155; text-align: left; padding: 8px 10px; color: #38bdf8; font-weight: 600; white-space: nowrap; cursor: pointer; }
+        th:hover { background: #475569; }
+        td { padding: 6px 10px; border-bottom: 1px solid #334155; }
+        tr:hover { background: #334155; }
+        .rank { color: #fbbf24; font-weight: bold; }
+        
+        .map-view { display: none; height: 450px; border-radius: 10px; overflow: hidden; }
+        .map-view.active { display: block; }
+        
+        footer { text-align: center; padding: 15px; color: #64748b; border-top: 1px solid #334155; margin-top: 20px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>India Toll Plaza Analytics</h1>
+            <p class="subtitle">IHMCL ETC FASTag Data - January 2026 | <span id="total-plazas">1157</span> Toll Plazas</p>
+            <p class="author">@Aptwincities X</p>
+        </header>
+
+        <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-value" id="kpi-vehicles">--</div><div class="kpi-label">Total Vehicles</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpi-revenue">--</div><div class="kpi-label">Total Revenue</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpi-plazas">--</div><div class="kpi-label">Toll Plazas</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpi-piu">--</div><div class="kpi-label">PIU Units</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpi-ro">--</div><div class="kpi-label">RO Regions</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpi-cars">--</div><div class="kpi-label">Cars</div></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="map">Map Views</button>
+            <button class="tab" data-tab="overview">Overview</button>
+            <button class="tab" data-tab="table">Table View</button>
+        </div>
+
+        <div id="map" class="tab-content active">
+            <div class="filter-section">
+                <div class="filter-row">
+                    <div class="filter-group"><label>State</label><select id="filter-state"><option value="">All States</option></select></div>
+                    <div class="filter-group"><label>PIU</label><select id="filter-piu"><option value="">All PIUs</option></select></div>
+                    <div class="filter-group"><label>RO</label><select id="filter-ro"><option value="">All ROs</option></select></div>
+                    <div class="filter-group"><label>Vehicle Type</label><select id="filter-vehicle"><option value="">All Types</option><option value="car">Cars</option><option value="lcv">LCV</option><option value="bus_truck">Bus/Truck</option><option value="axle3">3-Axle</option><option value="axle4_6">4-6 Axle</option></select></div>
+                    <div class="filter-group"><label>Map Threshold</label><input type="number" id="map-threshold" value="0" placeholder="Min for map"></div>
+                    <div class="filter-group"><label>&nbsp;</label><button class="btn btn-clear" onclick="clearFilters()">Clear</button></div>
+                </div>
+            </div>
+            
+            <div class="stats-bar"><span>Showing: <strong id="shown-count">1157</strong> plazas</span><span>|</span><span id="piu-count-display">PIUs: 0</span></div>
+
+            <div class="sub-tabs">
+                <button class="sub-tab active" data-map="flow">Traffic Flow</button>
+                <button class="sub-tab" data-map="piu">PIU Map</button>
+            </div>
+            
+            <div class="stats-bar" style="margin-bottom: 10px;">
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;background:#ef4444;border-radius:50%;"></span> High (>70%)</span>
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;background:#f97316;border-radius:50%;"></span> Medium (40-70%)</span>
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;background:#eab308;border-radius:50%;"></span> Low (20-40%)</span>
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;background:#22c55e;border-radius:50%;"></span> Very Low (<20%)</span>
+            </div>
+            
+            <div id="map-flow" class="map-view active"></div>
+            <div id="map-piu" class="map-view"></div>
+        </div>
+
+        <div id="overview" class="tab-content">
+            <div class="filter-section">
+                <div class="filter-row">
+                    <div class="filter-group"><label>State</label><select id="filter-state-overview"><option value="">All States</option></select></div>
+                    <div class="filter-group"><label>PIU</label><select id="filter-piu-overview"><option value="">All PIUs</option></select></div>
+                    <div class="filter-group"><label>RO</label><select id="filter-ro-overview"><option value="">All ROs</option></select></div>
+                    <div class="filter-group"><label>Vehicle Type</label><select id="filter-vehicle-overview"><option value="">All Types</option><option value="car">Cars</option><option value="lcv">LCV</option><option value="bus_truck">Bus/Truck</option><option value="axle3">3-Axle</option><option value="axle4_6">4-6 Axle</option></select></div>
+                    <div class="filter-group"><label>Min Count</label><input type="number" id="filter-min-overview" placeholder="0"></div>
+                    <div class="filter-group"><label>&nbsp;</label><button class="btn btn-clear" onclick="clearOverviewFilters()">Clear</button></div>
+                </div>
+            </div>
+            <div class="stats-bar"><span>Showing: <strong id="shown-count-overview">1157</strong> plazas</span></div>
+
+            <div class="chart-section">
+                <div class="chart-card"><div class="chart-title">Traffic by State</div><div id="state-chart"></div></div>
+                <div class="chart-card"><div class="chart-title">Vehicle Distribution</div><div id="vehicle-pie"></div></div>
+            </div>
+            <div class="chart-section">
+                <div class="chart-card"><div class="chart-title">Traffic by PIU (Top 20)</div><div id="piu-chart"></div></div>
+                <div class="chart-card"><div class="chart-title">Traffic by RO</div><div id="ro-chart"></div></div>
+            </div>
+            <div class="chart-card full-width"><div class="chart-title">Top Toll Plazas</div><div id="top-plazas-chart" style="height:500px"></div></div>
+        </div>
+
+        <div id="table" class="tab-content">
+            <div class="filter-section">
+                <div class="filter-row">
+                    <div class="filter-group"><label>State</label><select id="filter-state-table"><option value="">All States</option></select></div>
+                    <div class="filter-group"><label>PIU</label><select id="filter-piu-table"><option value="">All PIUs</option></select></div>
+                    <div class="filter-group"><label>RO</label><select id="filter-ro-table"><option value="">All ROs</option></select></div>
+                    <div class="filter-group"><label>Vehicle Type</label><select id="filter-vehicle-table"><option value="">All Types</option><option value="car">Cars</option><option value="lcv">LCV</option><option value="bus_truck">Bus/Truck</option><option value="axle3">3-Axle</option><option value="axle4_6">4-6 Axle</option></select></div>
+                    <div class="filter-group"><label>&nbsp;</label><button class="btn btn-clear" onclick="clearTableFilters()">Clear</button></div>
+                </div>
+            </div>
+            <div class="table-container">
+                <div class="chart-title">All Toll Plazas (<span id="table-count">1157</span>)</div>
+                <table><thead><tr><th data-sort="rank">#</th><th data-sort="plaza">Plaza</th><th data-sort="state">State</th><th data-sort="piu">PIU</th><th data-sort="ro">RO</th><th data-sort="car">Cars</th><th data-sort="lcv">LCV</th><th data-sort="bus_truck">Bus/Truck</th><th data-sort="axle3">3-Axle</th><th data-sort="axle4_6">4-6 Axle</th><th data-sort="total">Total</th></tr></thead><tbody id="table-body"></tbody></table>
+            </div>
+        </div>
+
+        <footer><p>Data Source: IHMCL ETC FASTag January 2026 | Built with Plotly.js + Leaflet</p></footer>
+    </div>
+
+    <script src="embedded_data.js"></script>
+    <script src="station_coords.js"></script>
+    <script>
+        let filteredData = [...TOLL_DATA];
+        let tableData = [...TOLL_DATA];
+        let sortCol = 'total', sortAsc = false;
+        let mapPiu, mapFlow;
+        let markersPiu = [], polylines = [], nodeMarkers = [];
+
+        // Fallback city coordinates
+        const cityCoords = {
+            'mumbai': [19.0760, 72.8777], 'delhi': [28.7041, 77.1025], 'bangalore': [12.9716, 77.5946],
+            'hyderabad': [17.3850, 78.4867], 'chennai': [13.0827, 80.2707], 'kolkata': [22.5726, 88.3639],
+            'pune': [18.5204, 73.8567], 'ahmedabad': [23.0225, 72.5714], 'jaipur': [26.9124, 75.7873],
+            'surat': [21.1702, 72.8311], 'lucknow': [26.8467, 80.9462], 'kanpur': [26.4499, 80.3319],
+            'nagpur': [21.1458, 79.0882], 'indore': [22.7196, 75.8577], 'chandigarh': [30.7333, 76.7794],
+            'gurgaon': [28.4595, 77.0266], 'faridabad': [28.4089, 77.3178], 'coimbatore': [11.0168, 76.9558],
+            'madurai': [9.9250, 78.1198], 'trichy': [10.7905, 78.7045], 'visakhapatnam': [17.6868, 83.2185],
+            'vijayawada': [16.5062, 80.6480], 'raipur': [21.2514, 81.6296], 'jabalpur': [23.1785, 79.9879],
+            'bhopal': [23.2599, 77.4126], 'varanasi': [25.3176, 82.9739], 'patna': [25.5941, 85.1376],
+            'bhubaneswar': [20.2961, 85.8245], 'dehradun': [30.3165, 78.0322], 'haridwar': [29.9457, 78.1342],
+            'jamshedpur': [22.8046, 86.2024], 'ranchi': [23.3441, 85.3095], 'guwahati': [26.1445, 91.7362],
+            'shimla': [31.1048, 77.1734], 'kochi': [9.9312, 76.2673], 'goa': [15.2993, 74.1240],
+            'amritsar': [31.6340, 74.8723], 'ludhiana': [30.9010, 75.8573], 'jalandhar': [31.3260, 75.5762],
+            'haryana': [29.0, 76.5], 'karnataka': [15.0, 76.0], 'tamil nadu': [11.0, 78.0],
+            'maharashtra': [19.0, 76.0], 'gujarat': [22.0, 71.0], 'rajasthan': [26.0, 74.0],
+            'uttar pradesh': [27.0, 80.0], 'west bengal': [23.0, 88.0], 'odisha': [20.0, 85.0],
+            'madhya pradesh': [23.0, 78.0], 'punjab': [31.0, 75.0], 'kerala': [10.0, 76.0],
+            'jharkhand': [23.0, 85.0], 'chhattisgarh': [21.0, 82.0], 'assam': [26.0, 93.0],
+            'uttarakhand': [30.0, 79.0], 'bihar': [25.0, 86.0], 'puducherry': [11.9416, 79.8083],
+            'malda': [25.0101, 88.1371], 'kharagpur': [22.3404, 87.3112], 'durgapur': [23.5204, 87.3119],
+            'siliguri': [26.7261, 88.4350], 'asansol': [23.6796, 86.9744], 'howrah': [22.6128, 88.3103],
+            'gwalior': [26.2183, 78.1828], 'ujjain': [23.1829, 75.7765], 'satna': [24.6043, 80.8326],
+            'rewa': [24.5424, 81.3014], 'jodhpur': [26.2389, 73.0243], 'udaipur': [24.5854, 73.7125],
+            'bikaner': [28.0229, 73.3119], 'alwar': [27.5629, 76.6257], 'ajmer': [26.4499, 74.6389],
+            'bhilwara': [25.3474, 74.6403], 'sikar': [27.6117, 75.1506], 'kotah': [25.1929, 76.8363],
+            'vadodara': [22.3073, 73.1812], 'rajkot': [22.2757, 70.7740], 'jamnagar': [22.4707, 70.0577],
+            'bhavnagar': [21.7648, 72.1519], ' Bharuch': [21.6911, 73.0364], 'anand': [22.5647, 72.9289],
+            'navsari': [20.8531, 72.9268], 'valsad': [20.6163, 72.9283], 'palanpur': [24.1720, 72.4384],
+            'gandhidham': [23.0686, 70.1009], 'mehsana': [23.9890, 72.3718], 'meerut': [28.9845, 77.7064],
+            'aligarh': [27.8974, 78.0750], 'moradabad': [28.8388, 78.7738], 'raebareli': [26.2389, 81.2335],
+            'jhansi': [25.4484, 78.5697], 'agra': [27.1767, 78.0081], 'firozabad': [27.1529, 78.2439],
+            'bulandshahr': [28.4079, 77.8498], 'muzaffarpur': [26.1226, 85.3645], 'bhagalpur': [25.2444, 86.9716],
+            'purnia': [25.4924, 87.4753], 'darbhanga': [26.1543, 85.8986], 'gaya': [24.7955, 84.9934],
+            'cuttack': [20.4625, 85.8828], 'rourkela': [22.2598, 84.8878], 'berhampur': [19.3123, 84.7943],
+            'hassan': [13.0067, 76.1016], 'mysore': [12.2958, 76.6394], 'mangalore': [12.9141, 74.8560],
+            'hubli': [15.3647, 75.1249], 'dharwad': [15.4589, 75.0078], 'belgaum': [15.8497, 74.4977],
+            'tumkur': [13.3379, 77.1173], 'chitradurga': [14.1074, 76.2868], 'dakshina kannada': [12.9141, 74.8560],
+            'haryana': [29.0, 76.5], 'ambala': [30.3782, 76.7767], 'panipat': [29.3909, 76.9636],
+            'karnal': [29.6857, 76.9905], 'sonipat': [28.9946, 77.0152], 'rohtak': [28.8955, 76.6066],
+            'hisar': [29.1645, 75.7353], 'bhiwani': [28.7830, 76.1315], 'rewari': [28.2006, 76.6195],
+            'jind': [29.3140, 76.3154], 'kurukshetra': [30.0264, 76.8417], 'yamunanagar': [30.1325, 77.2822],
+            'ludhiana': [30.9010, 75.8573], 'patiala': [30.3398, 76.3867], 'bathinda': [30.2115, 74.9305],
+            'moga': [30.8169, 75.1700], 'pathankot': [32.2747, 75.6525], 'hoshiarpur': [31.5326, 75.9104],
+            'gurdaspur': [32.0346, 75.2319], 'fatehgarh': [29.3677, 76.5838], 'ekta nagar': [22.3073, 73.1812],
+            'dwarka': [28.5921, 77.0465], 'epe': [28.7041, 77.1025], 'ghaziabad': [28.6692, 77.4538],
+            'haflong': [25.1656, 93.0276], 'tezpur': [26.6287, 92.7942], 'silchar': [24.8333, 92.7789],
+            'jorhat': [26.7551, 94.2163], 'dibrugarh': [27.4798, 94.9123], 'nagpur': [21.1458, 79.0882],
+            'latur': [18.3988, 76.5604], 'aurangabad': [19.9943, 75.3203], 'solapur': [17.6719, 75.9084],
+            'kolhapur': [16.7050, 74.2438], 'nashik': [20.0059, 73.7927], 'thane': [19.1861, 72.9752],
+            'jalgaon': [20.9967, 75.5627], 'amravati': [20.9374, 77.7796], 'akola': [20.7326, 77.0189],
+            'nandurbar': [22.2446, 74.2377], 'dhule': [20.9042, 74.7744], 'satara': [17.6805, 74.0183],
+            'sangli': [16.8524, 74.5815], 'ratnagiri': [16.9908, 73.3124], 'kolhapur': [16.7050, 74.2438],
+            'bangalore expressway': [12.9716, 77.5946], 'bengaluru expressway': [12.9716, 77.5946],
+            'gmr': [17.3850, 78.4867], 'lt': [12.9716, 77.5946], 'etr': [13.0827, 80.2707],
+            'tata': [19.0760, 72.8777], 'afcons': [19.0760, 72.8777], 'irb': [17.3850, 78.4867],
+            'meghwar': [25.3176, 82.9739], 'iicl': [22.5726, 88.3639], 'gci': [12.9716, 77.5946]
+        };
+
+        function getCoords(text) {
+            if (!text) return null;
+            text = text.toLowerCase().trim();
+            
+            // Try station coords first (has 22k+ mappings)
+            if (STATION_COORDS[text]) return STATION_COORDS[text];
+            
+            // Try cleaned version
+            const cleaned = text.replace(/[^a-z]/g, '');
+            if (STATION_COORDS[cleaned]) return STATION_COORDS[cleaned];
+            
+            // Try partial match in station coords
+            for (const [key, coords] of Object.entries(STATION_COORDS)) {
+                if (text.includes(key) || key.includes(text)) return coords;
+            }
+            
+            // Try exact match in cityCoords
+            if (cityCoords[text]) return cityCoords[text];
+            
+            // Try partial match in cityCoords
+            for (const [city, coords] of Object.entries(cityCoords)) {
+                if (text.includes(city) || city.includes(text)) return coords;
+            }
+            return null;
+        }
+
+        function detectState(piu, ro) {
+            const stateKeywords = {
+                'Maharashtra': ['mumbai', 'pune', 'nagpur', 'nanded', 'thane', 'nashik', 'kolhapur', 'aurangabad', 'solapur', 'latur', 'jalgaon', 'amravati', 'akola', 'dhule', 'nandurbar', 'satara', 'sangli', 'ratnagiri'],
+                'Karnataka': ['bangalore', 'bengaluru', 'hassan', 'mysore', 'mangalore', 'hubli', 'belgaum', 'dharwad', 'chitradurga', 'tumkur', 'dakshina kannada', 'udupi', 'chikkamagaluru'],
+                'Tamil Nadu': ['chennai', 'coimbatore', 'madurai', 'trichy', 'salem', 'vellore', 'tiruppur', 'erode', 'kancheepuram', 'chengalpattu', 'thanjavur', 'tirunelveli'],
+                'Telangana': ['hyderabad', 'secunderabad', 'warangal', 'karimnagar', 'khammam', 'nizamabad', 'ranga reddy', 'medak', 'nalgonda', 'adilabad'],
+                'Andhra Pradesh': ['visakhapatnam', 'vizag', 'vizianagaram', 'vijayawada', 'guntur', 'kurnool', 'ananthapur', 'kadapa', 'nellore', 'ongole', 'prakasam', 'srikakulam'],
+                'Gujarat': ['ahmedabad', 'surat', 'vadodara', 'gandhinagar', 'bhavnagar', 'rajkot', 'jamnagar', 'bharuch', 'anand', 'navsari', 'valsad', 'palanpur', 'mehsana', 'kutch', 'gandhidham', 'bharuch', 'ekta nagar'],
+                'Rajasthan': ['jaipur', 'jodhpur', 'udaipur', 'bikaner', 'alwar', 'ajmer', 'bhilwara', 'sikar', 'kotah', 'jaisalmer', 'barmer', 'nagaur', 'dausa', 'jhunjhunu'],
+                'Uttar Pradesh': ['lucknow', 'kanpur', 'varanasi', 'agra', 'meerut', 'aligarh', 'moradabad', 'jhansi', 'prayagraj', 'raebareli', 'firozabad', 'etawah', 'bulandshahr', 'fatehgarh'],
+                'West Bengal': ['kolkata', 'howrah', 'durgapur', 'asansol', 'siliguri', 'malda', 'bardhaman', 'kharagpur', 'birbhum', 'murshidabad', 'paschim medinipur'],
+                'Bihar': ['patna', 'muzaffarpur', 'bhagalpur', 'purnia', 'darbhanga', 'gaya', 'begusarai', 'samastipur', 'arrah', 'bhahabad'],
+                'Odisha': ['bhubaneswar', 'cuttack', 'rourkela', 'berhampur', 'chandikhole', 'puri', 'sambalpur', 'jharpokharia', 'balasore'],
+                'Madhya Pradesh': ['bhopal', 'indore', 'jabalpur', 'gwalior', 'ujjain', 'satna', 'rewa', 'damoh', 'sagar', 'bhopal', 'sehore', 'ratlam'],
+                'Punjab': ['amritsar', 'ludhiana', 'jalandhar', 'patiala', 'bhatinda', 'moga', 'pathankot', 'hoshiarpur', 'gurdaspur', 'fatehgarh sahib'],
+                'Haryana': ['chandigarh', 'gurgaon', 'faridabad', 'sonipat', 'rohtak', 'karnal', 'panipat', 'hisar', 'ambala', 'rewari', 'bhiwani', 'jind', 'kurukshetra', 'yamunanagar', 'mahendragarh'],
+                'Uttarakhand': ['dehradun', 'haridwar', 'roorkee', 'rishikesh', 'haldwani', 'kashipur', 'nainital', 'almora', ' Udham Singh Nagar'],
+                'Kerala': ['kochi', 'thiruvananthapuram', 'kozhikode', 'palakkad', 'thrissur', 'kollam', 'kottayam', 'idukki', 'malappuram'],
+                'Jharkhand': ['ranchi', 'jamshedpur', 'dhanbad', 'bokaro', 'hazaribagh', 'giridih', 'deoghar', 'dumka'],
+                'Chhattisgarh': ['raipur', 'bhilai', 'durg', 'bilaspur', 'raigarh', 'korba', 'dhamtari', 'rajnandgaon', 'kawardha'],
+                'Assam': ['guwahati', 'silchar', 'jorhat', 'tezpur', 'dibrugarh', 'silghat', 'haflong', 'nagaon'],
+                'Delhi': ['delhi', 'new delhi', 'dwarka', 'epe', 'narela', 'rohini'],
+                'Himachal Pradesh': ['shimla', 'mandi', 'kullu', 'manali', 'solan', 'dharamshala', 'sundarnagar', 'sirmour'],
+                'Goa': ['goa', 'margao', 'vasco', 'panjim', 'north goa', 'south goa'],
+                'Puducherry': ['puducherry', 'pondicherry', 'karaikal', 'yanam']
+            };
+            const text = (piu + ' ' + ro).toLowerCase();
+            for (const [state, keywords] of Object.entries(stateKeywords)) {
+                for (const kw of keywords) {
+                    if (text.includes(kw)) return state;
+                }
+            }
+            return 'Other';
+        }
+
+        function getVehicleCount(d, type) {
+            if (!type) return d.total_count || 0;
+            return d[type + '_count'] || 0;
+        }
+
+        const states = [...new Set(TOLL_DATA.map(d => detectState(d.piu, d.ro)))].sort();
+        const pius = [...new Set(TOLL_DATA.map(d => d.piu).filter(p => p))].sort();
+        const ros = [...new Set(TOLL_DATA.map(d => d.ro).filter(r => r))].sort();
+
+        function populateSelect(id, values) {
+            const sel = document.getElementById(id);
+            values.forEach(v => { const opt = document.createElement('option'); opt.value = v; opt.textContent = v; sel.appendChild(opt); });
+        }
+
+        ['filter-state', 'filter-state-overview', 'filter-state-table'].forEach(id => populateSelect(id, states));
+        ['filter-piu', 'filter-piu-overview', 'filter-piu-table'].forEach(id => populateSelect(id, pius));
+        ['filter-ro', 'filter-ro-overview', 'filter-ro-table'].forEach(id => populateSelect(id, ros));
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+                if (tab.dataset.tab === 'map' && !mapPiu) {
+                    setTimeout(initMaps, 50);
+                } else if (tab.dataset.tab === 'overview') {
+                    renderOverviewCharts();
+                }
+            });
+        });
+
+        document.querySelectorAll('.sub-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.map-view').forEach(v => v.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('map-' + tab.dataset.map).classList.add('active');
+                setTimeout(() => {
+                    if (tab.dataset.map === 'piu' && mapPiu) { mapPiu.invalidateSize(); }
+                    if (tab.dataset.map === 'flow' && mapFlow) { mapFlow.invalidateSize(); }
+                }, 100);
+            });
+        });
+
+        function applyFilters() {
+            const state = document.getElementById('filter-state').value;
+            const piu = document.getElementById('filter-piu').value;
+            const ro = document.getElementById('filter-ro').value;
+            const vtype = document.getElementById('filter-vehicle').value;
+            const threshold = parseInt(document.getElementById('map-threshold').value) || 0;
+
+            filteredData = TOLL_DATA.filter(d => {
+                const dState = detectState(d.piu, d.ro);
+                const count = getVehicleCount(d, vtype);
+                if (state && dState !== state) return false;
+                if (piu && d.piu !== piu) return false;
+                if (ro && d.ro !== ro) return false;
+                return true;
+            });
+
+            updateStats();
+            if (mapPiu) renderMaps();
+        }
+
+        function applyOverviewFilters() {
+            const state = document.getElementById('filter-state-overview').value;
+            const piu = document.getElementById('filter-piu-overview').value;
+            const ro = document.getElementById('filter-ro-overview').value;
+            const vtype = document.getElementById('filter-vehicle-overview').value;
+            const minVal = parseInt(document.getElementById('filter-min-overview').value) || 0;
+
+            filteredData = TOLL_DATA.filter(d => {
+                const dState = detectState(d.piu, d.ro);
+                const count = getVehicleCount(d, vtype);
+                if (state && dState !== state) return false;
+                if (piu && d.piu !== piu) return false;
+                if (ro && d.ro !== ro) return false;
+                if (count < minVal) return false;
+                return true;
+            });
+
+            updateStatsOverview();
+            renderOverviewCharts();
+        }
+
+        function applyTableFilters() {
+            const state = document.getElementById('filter-state-table').value;
+            const piu = document.getElementById('filter-piu-table').value;
+            const ro = document.getElementById('filter-ro-table').value;
+            const vtype = document.getElementById('filter-vehicle-table').value;
+            tableData = TOLL_DATA.filter(d => {
+                const dState = detectState(d.piu, d.ro);
+                if (state && dState !== state) return false;
+                if (piu && d.piu !== piu) return false;
+                if (ro && d.ro !== ro) return false;
+                return true;
+            });
+            document.getElementById('table-count').textContent = tableData.length;
+            renderTable();
+        }
+
+        function clearFilters() {
+            document.getElementById('filter-state').value = '';
+            document.getElementById('filter-piu').value = '';
+            document.getElementById('filter-ro').value = '';
+            document.getElementById('filter-vehicle').value = '';
+            document.getElementById('map-threshold').value = '0';
+            applyFilters();
+        }
+
+        function clearOverviewFilters() {
+            document.getElementById('filter-state-overview').value = '';
+            document.getElementById('filter-piu-overview').value = '';
+            document.getElementById('filter-ro-overview').value = '';
+            document.getElementById('filter-vehicle-overview').value = '';
+            document.getElementById('filter-min-overview').value = '';
+            filteredData = [...TOLL_DATA];
+            updateStatsOverview();
+            renderOverviewCharts();
+        }
+
+        function clearTableFilters() {
+            document.getElementById('filter-state-table').value = '';
+            document.getElementById('filter-piu-table').value = '';
+            document.getElementById('filter-ro-table').value = '';
+            document.getElementById('filter-vehicle-table').value = '';
+            tableData = [...TOLL_DATA];
+            document.getElementById('table-count').textContent = tableData.length;
+            renderTable();
+        }
+
+        document.getElementById('filter-state').addEventListener('change', applyFilters);
+        document.getElementById('filter-piu').addEventListener('change', applyFilters);
+        document.getElementById('filter-ro').addEventListener('change', applyFilters);
+        document.getElementById('filter-vehicle').addEventListener('change', applyFilters);
+        document.getElementById('map-threshold').addEventListener('input', applyFilters);
+        document.getElementById('filter-state-overview').addEventListener('change', applyOverviewFilters);
+        document.getElementById('filter-piu-overview').addEventListener('change', applyOverviewFilters);
+        document.getElementById('filter-ro-overview').addEventListener('change', applyOverviewFilters);
+        document.getElementById('filter-vehicle-overview').addEventListener('change', applyOverviewFilters);
+        document.getElementById('filter-min-overview').addEventListener('input', applyOverviewFilters);
+        document.getElementById('filter-state-table').addEventListener('change', applyTableFilters);
+        document.getElementById('filter-piu-table').addEventListener('change', applyTableFilters);
+        document.getElementById('filter-ro-table').addEventListener('change', applyTableFilters);
+        document.getElementById('filter-vehicle-table').addEventListener('change', applyTableFilters);
+
+        function updateStats() {
+            const total = filteredData.reduce((s, d) => s + (d.total_count || 0), 0);
+            const revenue = filteredData.reduce((s, d) => s + (d.total_amount || 0), 0);
+            const cars = filteredData.reduce((s, d) => s + (d.car_count || 0), 0);
+            const piuCount = [...new Set(filteredData.map(d => d.piu).filter(p => p))].length;
+            const roCount = [...new Set(filteredData.map(d => d.ro).filter(r => r))].length;
+
+            document.getElementById('kpi-vehicles').textContent = (total / 1000000).toFixed(1) + 'M';
+            document.getElementById('kpi-revenue').textContent = '₹' + (revenue / 10000000).toFixed(0) + 'Cr';
+            document.getElementById('kpi-plazas').textContent = filteredData.length;
+            document.getElementById('kpi-piu').textContent = piuCount;
+            document.getElementById('kpi-ro').textContent = roCount;
+            document.getElementById('kpi-cars').textContent = (cars / 1000000).toFixed(1) + 'M';
+            document.getElementById('shown-count').textContent = filteredData.length;
+            document.getElementById('piu-count-display').textContent = 'PIUs: ' + piuCount;
+        }
+
+        function updateStatsOverview() {
+            const total = filteredData.reduce((s, d) => s + (d.total_count || 0), 0);
+            const revenue = filteredData.reduce((s, d) => s + (d.total_amount || 0), 0);
+            const cars = filteredData.reduce((s, d) => s + (d.car_count || 0), 0);
+            const piuCount = [...new Set(filteredData.map(d => d.piu).filter(p => p))].length;
+            const roCount = [...new Set(filteredData.map(d => d.ro).filter(r => r))].length;
+
+            document.getElementById('kpi-vehicles').textContent = (total / 1000000).toFixed(1) + 'M';
+            document.getElementById('kpi-revenue').textContent = '₹' + (revenue / 10000000).toFixed(0) + 'Cr';
+            document.getElementById('kpi-plazas').textContent = filteredData.length;
+            document.getElementById('kpi-piu').textContent = piuCount;
+            document.getElementById('kpi-ro').textContent = roCount;
+            document.getElementById('kpi-cars').textContent = (cars / 1000000).toFixed(1) + 'M';
+            document.getElementById('shown-count-overview').textContent = filteredData.length;
+        }
+
+        // Maps
+        function initMaps() {
+            mapPiu = L.map('map-piu').setView([22.5, 82], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(mapPiu);
+            
+            mapFlow = L.map('map-flow').setView([22.5, 82], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(mapFlow);
+
+            renderMaps();
+        }
+
+        function renderMaps() {
+            renderPIUMap();
+            renderFlowMap();
+        }
+
+        function renderPIUMap() {
+            markersPiu.forEach(m => mapPiu.removeLayer(m));
+            markersPiu = [];
+            
+            const threshold = parseInt(document.getElementById('map-threshold').value) || 0;
+            const vtype = document.getElementById('filter-vehicle').value;
+            
+            // Aggregate by PIU - one entry per PIU
+            const piuData = {};
+            filteredData.forEach(d => {
+                if (!d.piu) return;
+                if (!piuData[d.piu]) {
+                    piuData[d.piu] = { 
+                        count: 0, 
+                        coords: getCoords(d.piu) || (d.plaza ? getCoords(d.plaza) : null), 
+                        state: detectState(d.piu, d.ro), 
+                        plazas: 0 
+                    };
+                }
+                piuData[d.piu].count += getVehicleCount(d, vtype);
+                piuData[d.piu].plazas += 1;
+            });
+
+            // Filter and sort
+            const validPius = Object.entries(piuData).filter(([p, d]) => d.count >= threshold && d.coords);
+            const maxCount = Math.max(...validPius.map(([p, d]) => d.count), 1);
+            
+            validPius.forEach(([piu, data]) => {
+                const ratio = data.count / maxCount;
+                let color;
+                if (ratio > 0.7) color = '#ef4444';
+                else if (ratio > 0.4) color = '#f97316';
+                else if (ratio > 0.2) color = '#eab308';
+                else color = '#22c55e';
+                
+                const radius = Math.min(20, Math.max(4, (data.count / maxCount) * 20));
+                const circle = L.circleMarker(data.coords, {
+                    radius: radius,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 1,
+                    opacity: 0.9,
+                    fillOpacity: 0.7
+                }).bindPopup('<strong>' + piu + '</strong><br>State: ' + data.state + '<br>Traffic: ' + data.count.toLocaleString() + '<br>Plazas: ' + data.plazas);
+                circle.addTo(mapPiu);
+                markersPiu.push(circle);
+            });
+        }
+
+        function renderFlowMap() {
+            polylines.forEach(p => mapFlow.removeLayer(p));
+            polylines = [];
+            nodeMarkers.forEach(m => mapFlow.removeLayer(m));
+            nodeMarkers = [];
+            
+            const threshold = parseInt(document.getElementById('map-threshold').value) || 0;
+            const vtype = document.getElementById('filter-vehicle').value;
+            
+            // Collect all unique nodes (PIUs) with coords and traffic
+            const allNodes = {};
+            const nodeTraffic = {};
+            const nodeConnections = {};
+            
+            filteredData.forEach(d => {
+                if (!d.piu) return;
+                const piuCoord = getCoords(d.piu) || (d.plaza ? getCoords(d.plaza) : null);
+                if (!piuCoord) return;
+                
+                if (!allNodes[d.piu]) {
+                    allNodes[d.piu] = piuCoord;
+                    nodeTraffic[d.piu] = 0;
+                    nodeConnections[d.piu] = new Set();
+                }
+                nodeTraffic[d.piu] += getVehicleCount(d, vtype);
+            });
+
+            // Filter by threshold
+            const validNodes = Object.entries(allNodes)
+                .filter(([p, c]) => nodeTraffic[p] >= threshold)
+                .reduce((obj, [k, v]) => { obj[k] = v; return obj; }, {});
+            
+            if (Object.keys(validNodes).length === 0) return;
+
+            const maxCount = Math.max(...Object.values(nodeTraffic).filter(t => t >= threshold), 1);
+            
+            // Helper to calculate distance
+            function getDistance(c1, c2) {
+                if (!c1 || !c2) return 9999;
+                return Math.sqrt(Math.pow(c1[0] - c2[0], 2) + Math.pow(c1[1] - c2[1], 2));
+            }
+            
+            // For each node, find nearest neighbors and connect
+            const nodeList = Object.keys(validNodes);
+            const edgeSet = new Set();
+            
+            nodeList.forEach(nodeA => {
+                const coordA = validNodes[nodeA];
+                
+                // Find nearest neighbors (up to 3)
+                const distances = nodeList
+                    .filter(n => n !== nodeA)
+                    .map(n => ({ node: n, dist: getDistance(coordA, validNodes[n]) }))
+                    .filter(d => d.dist < 3) // Within ~300km
+                    .sort((a, b) => a.dist - b.dist)
+                    .slice(0, 3); // Connect to up to 3 nearest
+                
+                distances.forEach(d => {
+                    const edgeKey = [nodeA, d.node].sort().join('||');
+                    if (!edgeSet.has(edgeKey)) {
+                        edgeSet.add(edgeKey);
+                        const trafficA = nodeTraffic[nodeA];
+                        const trafficB = nodeTraffic[d.node];
+                        const avgTraffic = (trafficA + trafficB) / 2;
+                        
+                        const weight = Math.min(12, Math.max(4, (avgTraffic / maxCount) * 12));
+                        
+                        // Color based on traffic
+                        const ratio = avgTraffic / maxCount;
+                        let color;
+                        if (ratio > 0.7) color = '#ef4444'; // red - high traffic
+                        else if (ratio > 0.4) color = '#f97316'; // orange - medium
+                        else if (ratio > 0.2) color = '#eab308'; // yellow
+                        else color = '#22c55e'; // green - low traffic
+                        
+                        const polyline = L.polyline([coordA, validNodes[d.node]], {
+                            color: color,
+                            weight: weight,
+                            opacity: 0.6
+                        }).bindPopup('<strong>' + nodeA + ' ↔ ' + d.node + '</strong><br>Traffic: ' + avgTraffic.toLocaleString() + '<br>Distance: ' + d.dist.toFixed(1) + '°');
+                        polyline.addTo(mapFlow);
+                        polylines.push(polyline);
+                    }
+                });
+            });
+
+            // Plot all valid nodes
+            nodeList.forEach(node => {
+                const coords = validNodes[node];
+                const traffic = nodeTraffic[node];
+                const radius = Math.min(22, Math.max(4, (traffic / maxCount) * 22));
+                
+                const marker = L.circleMarker(coords, {
+                    radius: radius,
+                    fillColor: '#38bdf8',
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 0.9,
+                    fillOpacity: 0.8
+                }).bindPopup('<strong>' + node + '</strong><br>Traffic: ' + traffic.toLocaleString());
+                marker.addTo(mapFlow);
+                nodeMarkers.push(marker);
+            });
+        }
+
+        // Overview charts
+        function renderOverviewCharts() {
+            renderStateChart(); renderVehiclePie(); renderPIUChartOverview(); renderROChartOverview(); renderTopPlazas();
+        }
+
+        function renderStateChart() {
+            const counts = {};
+            filteredData.forEach(d => { const s = detectState(d.piu, d.ro); counts[s] = (counts[s] || 0) + (d.total_count || 0); });
+            const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+            Plotly.newPlot('state-chart', [{ x: sorted.map(s => s[1]), y: sorted.map(s => s[0]), type: 'bar', orientation: 'h', marker: { color: sorted.map(s => s[1]), colorscale: 'Viridis' } }], { margin: {l: 120, r: 20, t: 10, b: 30}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: {color: '#e2e8f0', size: 10}, yaxis: {autorange: 'reversed'}, height: Math.max(250, sorted.length * 20) }, {responsive: true});
+        }
+
+        function renderVehiclePie() {
+            const vtype = document.getElementById('filter-vehicle-overview').value;
+            if (vtype) {
+                const total = filteredData.reduce((s, d) => s + getVehicleCount(d, vtype), 0);
+                document.getElementById('vehicle-pie').innerHTML = '<div style="text-align:center;padding:50px;"><strong>' + vtype.toUpperCase() + '</strong><br>' + total.toLocaleString() + '</div>';
+                return;
+            }
+            const cars = filteredData.reduce((s, d) => s + (d.car_count || 0), 0);
+            const lcv = filteredData.reduce((s, d) => s + (d.lcv_count || 0), 0);
+            const bus = filteredData.reduce((s, d) => s + (d.bus_truck_count || 0), 0);
+            const axle3 = filteredData.reduce((s, d) => s + (d.axle3_count || 0), 0);
+            const axle4 = filteredData.reduce((s, d) => s + (d.axle4_6_count || 0), 0);
+            const osv = filteredData.reduce((s, d) => s + (d.osv_count || 0), 0);
+            Plotly.newPlot('vehicle-pie', [{ labels: ['Cars', 'LCV', 'Bus/Truck', '3-Axle', '4-6 Axle', 'OSV'], values: [cars, lcv, bus, axle3, axle4, osv], type: 'pie', hole: 0.4, marker: { colors: ['#38bdf8', '#818cf8', '#a78bfa', '#c084fc', '#e879f9', '#f472b6'] }, textinfo: 'label+percent' }], { paper_bgcolor: 'rgba(0,0,0,0)', font: {color: '#e2e8f0', size: 10}, height: 250, showlegend: true, legend: {orientation: 'h', font: {color: '#e2e8f0', size: 9}} }, {responsive: true});
+        }
+
+        function renderPIUChartOverview() {
+            const vtype = document.getElementById('filter-vehicle-overview').value;
+            const counts = {};
+            filteredData.forEach(d => { if (d.piu) counts[d.piu] = (counts[d.piu] || 0) + getVehicleCount(d, vtype); });
+            const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 20);
+            Plotly.newPlot('piu-chart', [{ x: sorted.map(s => s[1]), y: sorted.map(s => s[0]), type: 'bar', orientation: 'h', marker: { color: sorted.map(s => s[1]), colorscale: 'Blues' } }], { margin: {l: 120, r: 20, t: 10, b: 30}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: {color: '#e2e8f0', size: 10}, yaxis: {autorange: 'reversed'}, height: 250 }, {responsive: true});
+        }
+
+        function renderROChartOverview() {
+            const vtype = document.getElementById('filter-vehicle-overview').value;
+            const counts = {};
+            filteredData.forEach(d => { if (d.ro) counts[d.ro] = (counts[d.ro] || 0) + getVehicleCount(d, vtype); });
+            const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+            Plotly.newPlot('ro-chart', [{ x: sorted.map(s => s[1]), y: sorted.map(s => s[0]), type: 'bar', orientation: 'h', marker: { color: sorted.map(s => s[1]), colorscale: 'Oranges' } }], { margin: {l: 80, r: 20, t: 10, b: 30}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: {color: '#e2e8f0', size: 10}, yaxis: {autorange: 'reversed'}, height: 250 }, {responsive: true});
+        }
+
+        function renderTopPlazas() {
+            const vtype = document.getElementById('filter-vehicle-overview').value;
+            const sorted = [...filteredData].sort((a, b) => getVehicleCount(b, vtype) - getVehicleCount(a, vtype)).slice(0, 50);
+            Plotly.newPlot('top-plazas-chart', [{ x: sorted.map(d => getVehicleCount(d, vtype)), y: sorted.map(d => d.plaza), type: 'bar', orientation: 'h', marker: { color: sorted.map(d => getVehicleCount(d, vtype)), colorscale: 'RdYlGn_r' }, text: sorted.map(d => getVehicleCount(d, vtype).toLocaleString()), textposition: 'outside' }], { margin: {l: 180, r: 50, t: 10, b: 30}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: {color: '#e2e8f0', size: 10}, yaxis: {autorange: 'reversed'} }, {responsive: true});
+        }
+
+        // Table
+        function renderTable() {
+            let sorted = [...tableData].sort((a, b) => {
+                let aVal, bVal;
+                if (sortCol === 'state') { aVal = detectState(a.piu, a.ro); bVal = detectState(b.piu, b.ro); }
+                else if (sortCol === 'rank' || sortCol === 'plaza' || sortCol === 'piu' || sortCol === 'ro') { aVal = a[sortCol] || ''; bVal = b[sortCol] || ''; }
+                else { aVal = getVehicleCount(a, sortCol === 'total' ? '' : sortCol); bVal = getVehicleCount(b, sortCol === 'total' ? '' : sortCol); }
+                if (typeof aVal === 'string') return sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                return sortAsc ? aVal - bVal : bVal - aVal;
+            });
+
+            document.getElementById('table-body').innerHTML = sorted.slice(0, 200).map((d, i) => {
+                const s = detectState(d.piu, d.ro);
+                return '<tr><td class="rank">' + (i + 1) + '</td><td>' + (d.plaza || '-') + '</td><td>' + s + '</td><td>' + (d.piu || '-') + '</td><td>' + (d.ro || '-') + '</td><td>' + (d.car_count || 0).toLocaleString() + '</td><td>' + (d.lcv_count || 0).toLocaleString() + '</td><td>' + (d.bus_truck_count || 0).toLocaleString() + '</td><td>' + (d.axle3_count || 0).toLocaleString() + '</td><td>' + (d.axle4_6_count || 0).toLocaleString() + '</td><td><strong>' + (d.total_count || 0).toLocaleString() + '</strong></td></tr>';
+            }).join('');
+        }
+
+        document.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                if (sortCol === th.dataset.sort) sortAsc = !sortAsc;
+                else { sortCol = th.dataset.sort; sortAsc = false; }
+                renderTable();
+            });
+        });
+
+        // Initialize on load
+        updateStats();
+        setTimeout(() => {
+            initMaps();
+        }, 100);
+    </script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+{
+  "https://cdn.jsdelivr.net/npm/@finos/perspective/dist/cdn/perspective.js": { "integrity": "sha512-pW4oYCaZNcfrQ4unlk8aMoKIfFSx9K4QjAzJ+L7YwWsWX+d+YUmxslFGqWRHzVWOxXNXpuhtZo1ObUuACBUboA==", "contentType": "application/javascript; charset=utf-8" },
+  "version": 1
+}

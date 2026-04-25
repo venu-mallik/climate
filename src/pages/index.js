@@ -23,11 +23,14 @@ export default function Home() {
               {key: 2, label: 'Time Scales'},
               {key: 3, label: 'Planet Degrees'},
               {key: 4, label: 'Sky'},
-              {key: 5, label: 'Toll Dashboard'}
+              {key: 5, label: 'Toll Dashboard'},
+              {key: 6, label: 'GeoAnalyzer'}
             ]}
               onClick={(e) => { 
                 if (e.key === '5') {
                   window.location.href = '/toll-dashboard.html';
+                } else if (e.key === '6') {
+                  window.location.href = '/geoanalyzer';
                 } else {
                   setActiveTab(e.key)
                 }
