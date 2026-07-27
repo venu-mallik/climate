@@ -1,4 +1,4 @@
-import { Body, AstroTime, Equator, Horizon, Observer, GeoVector, Ecliptic } from 'astronomy-engine';
+import { Body, AstroTime, GeoVector, Ecliptic } from 'astronomy-engine';
 
 export const planets = [
   { name: 'Sun', body: Body.Sun, color: '#FFD700' },
@@ -82,32 +82,30 @@ export function calculateNodeDegree(nodeType, date, lahiri) {
 
 
 export function getAscendant(date, obs, lahiri) {
-  // CHANGE-3: Use dynamic obliquity instead of fixed 23.44
-  const time = new AstroTime(toUTC(date));
-  const eq = Equator(Body.Sun, time, obs, true, true);
-  const hr = Horizon(time, obs, eq.ra, eq.dec, 'normal');
+  const jd = (date.getTime() / 86400000) + 2440587.5;
+  const T = (jd - 2451545.0) / 36525;
 
+  let gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T - T * T * T / 38710000;
+  gmst = ((gmst % 360) + 360) % 360;
+
+  const lst = ((gmst + obs.longitude) % 360 + 360) % 360;
+
+  const obl = (23.439291 - 0.0130042 * T) * Math.PI / 180;
   const latRad = obs.latitude * Math.PI / 180;
-  const dec = eq.dec * Math.PI / 180;
-  const ra = hr.ra * Math.PI / 180;
+  const lstRad = lst * Math.PI / 180;
 
-  const sinDec = Math.sin(dec);
-  const cosDec = Math.cos(dec);
-  const sinLat = Math.sin(latRad);
-  const cosLat = Math.cos(latRad);
+  let asc = Math.atan2(Math.cos(lstRad), -(Math.sin(obl) * Math.tan(latRad) + Math.cos(obl) * Math.sin(lstRad)));
+  asc = (asc * 180 / Math.PI + 360) % 360;
 
-  const cosH = -sinLat * sinDec / (cosLat * cosDec);
-  const H = Math.acos(Math.min(1, Math.max(-1, cosH)));
-
-  // CHANGE-3: Use fixed obliquity (23.44) - Obliquity() not available in astronomy-engine
-  const obliquity = 23.44 * Math.PI / 180;
-  const sinLambda = sinDec * Math.sin(obliquity) + cosDec * Math.cos(obliquity) * Math.cos(H);
-
-  const lambda = Math.asin(Math.min(1, Math.max(-1, sinLambda))) * 180 / Math.PI;
-  const tropicalAsc = (lambda + 360) % 360;
-  const siderealAsc = ((tropicalAsc - lahiri) % 360 + 360) % 360;
-
+  const siderealAsc = ((asc - lahiri) % 360 + 360) % 360;
   return siderealAsc;
+}
+
+export function getD9Sign(degree) {
+  const d1Sign = Math.floor(degree / 30);
+  const posInSign = degree % 30;
+  const navamsa = Math.floor(posInSign / (30 / 9));
+  return ((d1Sign * 9 + navamsa) % 12) + 1;
 }
 
 export function getHouseNumber(planetDegree, ascendantDegree) {

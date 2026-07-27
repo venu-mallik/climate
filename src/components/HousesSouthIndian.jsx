@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Select, Button, DatePicker, Flex, Card, Space, Tag, Table, Tooltip, Row, Col } from 'antd';
-import { DownloadOutlined, LeftOutlined, RightOutlined, InfoCircleOutlined } from '@ant-design/icons';
-import { Body, AstroTime, Equator, Horizon, Observer } from 'astronomy-engine';
+import { DownloadOutlined, LeftOutlined, RightOutlined, InfoCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { Observer } from 'astronomy-engine';
 import dayjs from 'dayjs';
-import { planets, calculatePlanetDegree, getAscendant, getLahari, exportToCSV } from './PlanetUtils';
+import { planets, calculatePlanetDegree, getAscendant, getLahari, getD9Sign, exportToCSV } from './PlanetUtils';
 
 const { Option } = Select;
 
@@ -87,7 +87,9 @@ export default function HousesSouthIndian() {
   const [lahiri, setLahiri] = useState(23.5);
   const [planetData, setPlanetData] = useState([]);
   const [signPlanets, setSignPlanets] = useState({});
+  const [d9SignPlanets, setD9SignPlanets] = useState({});
   const [ascendant, setAscendant] = useState(0);
+  const [ascD9Sign, setAscD9Sign] = useState(0);
   const [csvData, setCsvData] = useState([]);
 
   const obs = new Observer(defaultCity.lat, defaultCity.lon, defaultCity.elevation);
@@ -100,12 +102,15 @@ export default function HousesSouthIndian() {
   useEffect(() => {
     const asc = getAscendant(selectedDate, obs, lahiri);
     setAscendant(asc);
+    setAscD9Sign(getD9Sign(asc));
 
     const data = [];
     const signData = {};
+    const d9Data = {};
 
     for (let i = 1; i <= 12; i++) {
       signData[i] = [];
+      d9Data[i] = [];
     }
 
     planets
@@ -114,6 +119,7 @@ export default function HousesSouthIndian() {
         const degree = calculatePlanetDegree(planet.body, selectedDate, obs, lahiri);
         const signNum = getSignNumber(degree);
         const posInSign = getPositionInSign(degree);
+        const d9Sign = getD9Sign(degree);
 
         const planetInfo = {
           name: planet.name,
@@ -121,132 +127,60 @@ export default function HousesSouthIndian() {
           degree,
           sign: signNum,
           signInfo: signNames[signNum],
-          positionInSign: posInSign
+          positionInSign: posInSign,
+          d9Sign,
+          d9SignInfo: signNames[d9Sign]
         };
 
         data.push(planetInfo);
         signData[signNum].push(planetInfo);
+        d9Data[d9Sign].push(planetInfo);
       });
 
     setPlanetData(data);
     setSignPlanets(signData);
+    setD9SignPlanets(d9Data);
   }, [selectedDate, selectedPlanets, lahiri]);
 
   useEffect(() => {
     const csv = planetData.map(p => ({
       planet: p.name,
-      d1: p.sign,
-      sign: p.signInfo?.sign,
-      degree: p.degree.toFixed(2),
-      pos: p.positionInSign.toFixed(2)
+      d1_sign: p.sign,
+      d1_sign_name: p.signInfo?.sign,
+      d1_degree: p.degree.toFixed(2),
+      d1_pos: p.positionInSign.toFixed(2),
+      d9_sign: p.d9Sign,
+      d9_sign_name: p.d9SignInfo?.sign
     }));
     setCsvData(csv);
   }, [planetData]);
 
-  const handlePrev = () => {
+  const shiftDate = (dir) => {
     const newDate = new Date(selectedDate);
-    
-    switch (resolution) {
-      case '1min':
-        newDate.setMinutes(newDate.getMinutes() - 1);
-        break;
-      case '5min':
-        newDate.setMinutes(newDate.getMinutes() - 5);
-        break;
-      case '15min':
-        newDate.setMinutes(newDate.getMinutes() - 15);
-        break;
-      case '30min':
-        newDate.setMinutes(newDate.getMinutes() - 30);
-        break;
-      case '60min':
-        newDate.setHours(newDate.getHours() - 1);
-        break;
-      case '1day':
-        newDate.setDate(newDate.getDate() - 1);
-        break;
-      case '1week':
-        newDate.setDate(newDate.getDate() - 7);
-        break;
-      case '1month':
-        newDate.setMonth(newDate.getMonth() - 1);
-        break;
-      case '3month':
-        newDate.setMonth(newDate.getMonth() - 3);
-        break;
-      case '6month':
-        newDate.setMonth(newDate.getMonth() - 6);
-        break;
-      case '1year':
-        newDate.setFullYear(newDate.getFullYear() - 1);
-        break;
-      case '5year':
-        newDate.setFullYear(newDate.getFullYear() - 5);
-        break;
-      case '10year':
-        newDate.setFullYear(newDate.getFullYear() - 10);
-        break;
-      default:
-        newDate.setDate(newDate.getDate() - 1);
-    }
-    
-    setSelectedDate(newDate);
-  };
-
-  const handleNext = () => {
-    const newDate = new Date(selectedDate);
-    
-    switch (resolution) {
-      case '1min':
-        newDate.setMinutes(newDate.getMinutes() + 1);
-        break;
-      case '5min':
-        newDate.setMinutes(newDate.getMinutes() + 5);
-        break;
-      case '15min':
-        newDate.setMinutes(newDate.getMinutes() + 15);
-        break;
-      case '30min':
-        newDate.setMinutes(newDate.getMinutes() + 30);
-        break;
-      case '60min':
-        newDate.setHours(newDate.getHours() + 1);
-        break;
-      case '1day':
-        newDate.setDate(newDate.getDate() + 1);
-        break;
-      case '1week':
-        newDate.setDate(newDate.getDate() + 7);
-        break;
-      case '1month':
-        newDate.setMonth(newDate.getMonth() + 1);
-        break;
-      case '3month':
-        newDate.setMonth(newDate.getMonth() + 3);
-        break;
-      case '6month':
-        newDate.setMonth(newDate.getMonth() + 6);
-        break;
-      case '1year':
-        newDate.setFullYear(newDate.getFullYear() + 1);
-        break;
-      case '5year':
-        newDate.setFullYear(newDate.getFullYear() + 5);
-        break;
-      case '10year':
-        newDate.setFullYear(newDate.getFullYear() + 10);
-        break;
-      default:
-        newDate.setDate(newDate.getDate() + 1);
-    }
-    
+    const step = (mult) => {
+      switch (resolution) {
+        case '1min': newDate.setMinutes(newDate.getMinutes() + mult); break;
+        case '5min': newDate.setMinutes(newDate.getMinutes() + 5 * mult); break;
+        case '15min': newDate.setMinutes(newDate.getMinutes() + 15 * mult); break;
+        case '30min': newDate.setMinutes(newDate.getMinutes() + 30 * mult); break;
+        case '60min': newDate.setHours(newDate.getHours() + mult); break;
+        case '1day': newDate.setDate(newDate.getDate() + mult); break;
+        case '1week': newDate.setDate(newDate.getDate() + 7 * mult); break;
+        case '1month': newDate.setMonth(newDate.getMonth() + mult); break;
+        case '3month': newDate.setMonth(newDate.getMonth() + 3 * mult); break;
+        case '6month': newDate.setMonth(newDate.getMonth() + 6 * mult); break;
+        case '1year': newDate.setFullYear(newDate.getFullYear() + mult); break;
+        case '5year': newDate.setFullYear(newDate.getFullYear() + 5 * mult); break;
+        case '10year': newDate.setFullYear(newDate.getFullYear() + 10 * mult); break;
+        default: newDate.setDate(newDate.getDate() + mult);
+      }
+    };
+    step(dir);
     setSelectedDate(newDate);
   };
 
   const handleDateChange = (date) => {
-    if (date) {
-      setSelectedDate(date.toDate());
-    }
+    if (date) setSelectedDate(date.toDate());
   };
 
   const handleExportCSV = () => {
@@ -259,7 +193,7 @@ export default function HousesSouthIndian() {
       title: 'Planet',
       dataIndex: 'name',
       key: 'name',
-      width: 70,
+      width: 60,
       render: (v, r) => (
         <Tag color={r.color} style={{ fontSize: 10, margin: 0, borderRadius: 3 }}>
           {v}
@@ -267,8 +201,8 @@ export default function HousesSouthIndian() {
       )
     },
     {
-      title: 'Sign / Degree',
-      key: 'signDegree',
+      title: 'D1',
+      key: 'd1',
       width: 140,
       render: (_, r) => (
         <Space size={2}>
@@ -278,94 +212,57 @@ export default function HousesSouthIndian() {
           <span style={{ fontSize: 10 }}>
             {r.signInfo?.symbol} {r.signInfo?.sign}
           </span>
+          <span style={{ fontSize: 9, color: '#888' }}>
+            {decimalToHms(r.positionInSign)}
+          </span>
         </Space>
       )
     },
     {
-      title: 'Position',
-      dataIndex: 'positionInSign',
-      key: 'pos',
-      width: 70,
-      render: (v) => <span style={{ fontSize: 10 }}>{decimalToHms(v)}</span>
+      title: 'D9',
+      key: 'd9',
+      width: 80,
+      render: (_, r) => (
+        <Space size={2}>
+          <Tag color="orange" style={{ fontSize: 9, margin: 0, borderRadius: 2, padding: '0 3px' }}>
+            {r.d9Sign}
+          </Tag>
+          <span style={{ fontSize: 10 }}>
+            {r.d9SignInfo?.symbol} {r.d9SignInfo?.sign}
+          </span>
+        </Space>
+      )
     }
   ];
 
-  const renderChartCell = (cell) => {
+  const renderChartCell = (cell, isD9 = false) => {
     if (cell === 'empty') {
       return (
-        <div style={{
-          backgroundColor: 'rgba(15, 15, 20, 0.95)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: 3,
-          height: '100%'
-        }}>
-          <span style={{ color: '#2a2a35', fontSize: 14 }}>☐</span>
+        <div className="chart-cell chart-cell-empty">
+          <span>☐</span>
         </div>
       );
     }
 
     const signNum = cell;
-    const planetsInSign = signPlanets[signNum] || [];
+    const planetsInSign = isD9 ? (d9SignPlanets[signNum] || []) : (signPlanets[signNum] || []);
     const signInfo = signNames[signNum];
-    const ascSignNum = Math.floor(ascendant / 30) + 1;
+    const ascSignNum = isD9 ? ascD9Sign : (Math.floor(ascendant / 30) + 1);
     const isAscSign = signNum === ascSignNum;
 
     return (
       <Tooltip
         title={planetsInSign.map(p => `${p.name}: ${p.positionInSign.toFixed(1)}°`).join(', ') || 'Empty'}
       >
-        <div style={{
-          backgroundColor: isAscSign ? 'rgba(0, 175, 80, 0.12)' : 'rgba(25, 25, 35, 0.95)',
-          padding: '4px 6px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          minHeight: 70,
-          height: 70,
-          borderRadius: 4,
-          border: isAscSign ? '1px solid rgba(0, 175, 80, 0.6)' : '1px solid rgba(60, 60, 75, 0.5)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ 
-              fontSize: 10, 
-              color: isAscSign ? '#00af50' : '#6a6a7a',
-              fontWeight: 600
-            }}>
-              {signNum}
-            </span>
-            <span style={{ fontSize: 13 }}>{signInfo?.symbol}</span>
+        <div className={`chart-cell ${isAscSign ? 'chart-cell-asc' : ''}`}>
+          <div className="chart-cell-header">
+            <span className="chart-cell-num">{signNum}</span>
+            <span className="chart-cell-symbol">{signInfo?.symbol}</span>
           </div>
-          <div style={{
-            fontSize: 8,
-            color: '#8a8a9a',
-            textAlign: 'center',
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
-            {signInfo?.sign}
-          </div>
-          <div style={{
-            fontSize: 9,
-            color: '#aaa',
-            textAlign: 'center',
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            gap: 2,
-            minHeight: 18
-          }}>
+          <div className="chart-cell-sign">{signInfo?.sign}</div>
+          <div className="chart-cell-planets">
             {planetsInSign.map(p => (
-              <span key={p.name} style={{ 
-                color: p.color, 
-                fontWeight: 600, 
-                fontSize: 10
-              }}>
-                {p.name}
-              </span>
+              <span key={p.name} style={{ color: p.color }}>{p.name}</span>
             ))}
           </div>
         </div>
@@ -375,136 +272,110 @@ export default function HousesSouthIndian() {
 
   const ascSignNum = Math.floor(ascendant / 30) + 1;
   const ascSignInfo = signNames[ascSignNum];
+  const ascD9SignInfo = signNames[ascD9Sign];
 
   return (
-    <div style={{ padding: 8 }}>
+    <div className="sky-container">
       <Row gutter={[8, 8]}>
         <Col xs={24}>
           <Flex vertical gap={12} style={ToolbarContainer}>
-  <Flex wrap="wrap" gap={4} align="center" justify="space-between">
-    
-    {/* Primary Controls Group */}
-    <Flex wrap="wrap" gap={4} style={{ flex: '1 1 300px' }}>
-      <Select
-        mode="tags"
-        placeholder="Select Planets"
-        value={selectedPlanets}
-        onChange={setSelectedPlanets}
-        maxTagCount="responsive"
-        style={{ minWidth: 160, flex: 1 }}
-        variant="filled" // Softer look than 'outlined'
-      >
-        {planets.map(p => (
-          <Option key={p.name} value={p.name}>{p.name}</Option>
-        ))}
-      </Select>
-      <Button 
-            icon={<DownloadOutlined />} 
-            onClick={handleExportCSV} 
-            type="primary"
-            shape="circle"
-          />
-      </Flex>
-      <Flex gap={4} align="center">
-      <DatePicker
-        value={dayjs(selectedDate)}
-        onChange={handleDateChange}
-        showTime
-        variant="filled"
-        style={{ width: 180 }}
-      />
-      <Select 
-        value={resolution}
-        onChange={setResolution}
-        variant="filled"
-        style={{ width: 65 }}
-      >
-        {resolutions.map(r => (
-          <Option key={r.value} value={r.value}>{r.label}</Option>
-        ))}
-      </Select>
-
-        <Button 
-          icon={<LeftOutlined />} 
-          onClick={handlePrev} 
-          shape="circle" 
-          type="text" 
-        />
-        <Button 
-          icon={<RightOutlined />} 
-          onClick={handleNext} 
-          shape="circle" 
-          type="text" 
-        />
-    </Flex>
-  </Flex>
-</Flex>
+            <Flex wrap="wrap" gap={4} align="center" justify="space-between">
+              <Flex wrap="wrap" gap={4} style={{ flex: '1 1 280px' }}>
+                <Select
+                  mode="tags"
+                  placeholder="Planets"
+                  value={selectedPlanets}
+                  onChange={setSelectedPlanets}
+                  maxTagCount="responsive"
+                  style={{ minWidth: 120, flex: 1 }}
+                  variant="filled"
+                >
+                  {planets.map(p => (
+                    <Option key={p.name} value={p.name}>{p.name}</Option>
+                  ))}
+                </Select>
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={handleExportCSV}
+                  type="primary"
+                  shape="circle"
+                  size="small"
+                />
+              </Flex>
+              <Flex gap={4} align="center" wrap="wrap">
+                <DatePicker
+                  value={dayjs(selectedDate)}
+                  onChange={handleDateChange}
+                  showTime
+                  variant="filled"
+                  size="small"
+                  style={{ width: 155 }}
+                />
+                <Select
+                  value={resolution}
+                  onChange={setResolution}
+                  variant="filled"
+                  size="small"
+                  style={{ width: 58 }}
+                >
+                  {resolutions.map(r => (
+                    <Option key={r.value} value={r.value}>{r.label}</Option>
+                  ))}
+                </Select>
+                <Button icon={<LeftOutlined />} onClick={() => shiftDate(-1)} shape="circle" type="text" size="small" />
+                <Button icon={<RightOutlined />} onClick={() => shiftDate(1)} shape="circle" type="text" size="small" />
+              </Flex>
+            </Flex>
+          </Flex>
         </Col>
 
-        <Col xs={24} lg={12}>
+        <Col xs={24} sm={12}>
           <Card
-            title={<span style={{ fontSize: 12, fontWeight: 600 }}>Rasi Chart (D1)</span>}
-            style={{ 
-              backgroundColor: 'rgba(20, 20, 30, 0.95)',
-              border: '1px solid rgba(60, 60, 80, 0.4)',
-              borderRadius: 8
-            }}
-            bodyStyle={{ padding: 8 }}
+            title={
+              <span className="card-title">
+                Rasi Chart (D1)
+                <Tag color="green" className="card-tag">{ascSignInfo?.symbol} ASC {ascSignInfo?.sign}</Tag>
+              </span>
+            }
+            className="chart-card"
+            styles={{ body: { padding: 6 } }}
           >
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: 3,
-              backgroundColor: 'rgba(40, 40, 55, 0.5)',
-              padding: 4,
-              borderRadius: 6,
-              border: '1px solid rgba(60, 60, 80, 0.4)'
-            }}>
+            <div className="chart-grid">
               {chartOrder.map((row, rowIdx) => (
                 row.map((cell, colIdx) => (
-                  <div key={`${rowIdx}-${colIdx}`} style={{ borderRadius: 3 }}>
-                    {renderChartCell(cell)}
-                  </div>
+                  <div key={`d1-${rowIdx}-${colIdx}`}>{renderChartCell(cell, false)}</div>
                 ))
               ))}
-            </div>
-
-            <div style={{
-              marginTop: 8,
-              padding: 8,
-              backgroundColor: 'rgba(25, 25, 38, 0.95)',
-              borderRadius: 6,
-              border: '1px solid rgba(60, 60, 80, 0.4)'
-            }}>
-              <div style={{ 
-                fontSize: 10, 
-                color: '#7a7a8a', 
-                marginBottom: 2,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4
-              }}>
-                <InfoCircleOutlined /> Ascendant
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
-                {ascendant.toFixed(2)}°
-              </div>
-              <div style={{ fontSize: 11, color: '#00af50', fontWeight: 500, marginTop: 2 }}>
-                {ascSignInfo?.symbol} {ascSignInfo?.sign} ({ascSignInfo?.name})
-              </div>
             </div>
           </Card>
         </Col>
 
-        <Col xs={24} lg={12}>
+        <Col xs={24} sm={12}>
           <Card
-            title={<span style={{ fontSize: 12, fontWeight: 600 }}>Positions</span>}
-            style={{ 
-              backgroundColor: 'rgba(20, 20, 30, 0.95)',
-              border: '1px solid rgba(60, 60, 80, 0.4)',
-              borderRadius: 8
-            }}
-            bodyStyle={{ padding: 8 }}
+            title={
+              <span className="card-title">
+                Navamsha Chart (D9)
+                <Tag color="orange" className="card-tag">{ascD9SignInfo?.symbol} ASC D9 {ascD9SignInfo?.sign}</Tag>
+              </span>
+            }
+            className="chart-card"
+            styles={{ body: { padding: 6 } }}
+          >
+            <div className="chart-grid">
+              {chartOrder.map((row, rowIdx) => (
+                row.map((cell, colIdx) => (
+                  <div key={`d9-${rowIdx}-${colIdx}`}>{renderChartCell(cell, true)}</div>
+                ))
+              ))}
+            </div>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={14}>
+          <Card
+            title={<span className="card-title">Planetary Positions</span>}
+            className="chart-card"
+            styles={{ body: { padding: 6 } }}
           >
             <Table
               dataSource={planetData}
@@ -513,31 +384,220 @@ export default function HousesSouthIndian() {
               size="small"
               scroll={{ x: 320, y: 250 }}
               rowKey={(record) => `${record.name}-${record.degree}`}
-              style={{ backgroundColor: 'transparent', borderRadius: 6 }}
-              rowStyle={{ backgroundColor: 'rgba(25, 25, 38, 0.6)' }}
-              headerStyle={{ backgroundColor: 'rgba(35, 35, 50, 0.95)', fontSize: 10, fontWeight: 600 }}
             />
           </Card>
         </Col>
 
-        <Col xs={24}>
-          <Card
-            style={{ 
-              backgroundColor: 'rgba(20, 20, 30, 0.95)',
-              border: '1px solid rgba(60, 60, 80, 0.4)',
-              borderRadius: 8
-            }}
-            bodyStyle={{ padding: 8 }}
-          >
-            <Space size={6} wrap style={{ display: 'flex', flexWrap: 'wrap' }}>
-              <Tag style={{ margin: 0, borderRadius: 3, fontSize: 10 }}>Lahiri: {lahiri.toFixed(2)}°</Tag>
-              <Tag style={{ margin: 0, borderRadius: 3, fontSize: 10 }}>ASC: {ascendant.toFixed(2)}°</Tag>
-              <Tag style={{ margin: 0, borderRadius: 3, fontSize: 10 }}>{defaultCity.name}</Tag>
-              <Tag style={{ margin: 0, borderRadius: 3, fontSize: 10 }}>Vedic (D1)</Tag>
-            </Space>
-          </Card>
+        <Col xs={24} lg={10}>
+          <Flex vertical gap={8}>
+            <Card className="chart-card" styles={{ body: { padding: '10px 14px' } }}>
+              <div className="asc-label">
+                <InfoCircleOutlined /> Ascendant (Lagna)
+              </div>
+              <div className="asc-value">
+                <span className="asc-sign">{ascSignInfo?.symbol} {ascSignInfo?.sign}</span>
+                <span className="asc-deg">{ascendant.toFixed(2)}°</span>
+                <Tag color="green" className="asc-tag">{ascSignInfo?.name}</Tag>
+              </div>
+              <div className="d9-asc">
+                D9 Navamsha: <span className="d9-asc-value">{ascD9SignInfo?.symbol} {ascD9SignInfo?.sign}</span>
+              </div>
+            </Card>
+
+            <Card className="chart-card" styles={{ body: { padding: '8px 14px' } }}>
+              <Flex wrap="wrap" gap={4} align="center">
+                <Tag className="info-tag">Ayanamsa: {lahiri.toFixed(2)}°</Tag>
+                <Tag className="info-tag"><EnvironmentOutlined /> {defaultCity.name}</Tag>
+                <Tag className="info-tag">D1 + D9</Tag>
+                <Tag className="info-tag">ASC: {ascendant.toFixed(2)}°</Tag>
+              </Flex>
+            </Card>
+          </Flex>
         </Col>
       </Row>
+
+      <style jsx>{`
+        .sky-container {
+          padding: 8px;
+          max-width: 1400px;
+          margin: 0 auto;
+        }
+
+        @media (max-width: 576px) {
+          .sky-container {
+            padding: 4px;
+          }
+        }
+      `}</style>
+
+      <style global jsx>{`
+        .card-title {
+          font-size: 12px;
+          font-weight: 600;
+        }
+        .card-tag {
+          margin-left: 8px;
+          font-size: 9px;
+          border-radius: 3px;
+        }
+        .chart-card {
+          background-color: rgba(20, 20, 30, 0.95) !important;
+          border: 1px solid rgba(60, 60, 80, 0.4) !important;
+          border-radius: 8px !important;
+        }
+        .chart-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 3px;
+          background-color: rgba(40, 40, 55, 0.5);
+          padding: 4px;
+          border-radius: 6px;
+          border: 1px solid rgba(60, 60, 80, 0.4);
+        }
+        .chart-cell {
+          background-color: rgba(25, 25, 35, 0.95);
+          padding: 4px 6px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          min-height: 70px;
+          height: 70px;
+          border-radius: 4px;
+          border: 1px solid rgba(60, 60, 75, 0.5);
+        }
+        .chart-cell.chart-cell-asc {
+          background-color: rgba(0, 175, 80, 0.12);
+          border: 1px solid rgba(0, 175, 80, 0.6);
+        }
+        .chart-cell-empty {
+          background-color: rgba(15, 15, 20, 0.95);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .chart-cell-empty span {
+          color: #2a2a35;
+          font-size: 14px;
+        }
+        .chart-cell-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .chart-cell-num {
+          font-size: 10px;
+          color: #6a6a7a;
+          font-weight: 600;
+        }
+        .chart-cell-asc .chart-cell-num {
+          color: #00af50;
+        }
+        .chart-cell-symbol {
+          font-size: 13px;
+        }
+        .chart-cell-sign {
+          font-size: 8px;
+          color: #8a8a9a;
+          text-align: center;
+          font-weight: 500;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .chart-cell-planets {
+          font-size: 9px;
+          color: #aaa;
+          text-align: center;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 2px;
+          min-height: 18px;
+        }
+        .chart-cell-planets span {
+          font-weight: 600;
+          font-size: 10px;
+        }
+        .asc-label {
+          font-size: 10px;
+          color: #7a7a8a;
+          margin-bottom: 4px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .asc-value {
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .asc-sign {
+          font-size: 18px;
+          font-weight: 700;
+          color: #00af50;
+        }
+        .asc-deg {
+          font-size: 12px;
+          color: #aaa;
+        }
+        .asc-tag {
+          font-size: 9px;
+          border-radius: 3px;
+          margin: 0;
+        }
+        .d9-asc {
+          margin-top: 6px;
+          font-size: 11px;
+          color: #888;
+        }
+        .d9-asc-value {
+          color: #ffa500;
+          font-weight: 600;
+        }
+        .info-tag {
+          margin: 0;
+          border-radius: 3px;
+          font-size: 10px;
+        }
+
+        @media (max-width: 576px) {
+          .chart-cell {
+            min-height: 56px;
+            height: 56px;
+            padding: 3px 4px;
+          }
+          .chart-cell-num {
+            font-size: 9px;
+          }
+          .chart-cell-symbol {
+            font-size: 11px;
+          }
+          .chart-cell-sign {
+            font-size: 7px;
+          }
+          .chart-cell-planets span {
+            font-size: 8px;
+          }
+          .chart-grid {
+            gap: 2px;
+            padding: 3px;
+          }
+          .asc-sign {
+            font-size: 15px;
+          }
+          .card-title {
+            font-size: 11px;
+          }
+        }
+
+        @media (min-width: 577px) and (max-width: 992px) {
+          .chart-cell {
+            min-height: 62px;
+            height: 62px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
