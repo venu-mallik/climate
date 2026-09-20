@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
-import { Button, Input, Spin, Table, Tag } from 'antd';
+import { Button, Input, InputNumber, Spin, Table, Tag } from 'antd';
 import AppLayout from '@/components/AppLayout';
 
 const API_URL = 'https://ringpopulationsapi.azurewebsites.net/api/globalboundarypopulations';
@@ -11,10 +11,12 @@ const DRAW_OPTIONS = {
   polyline: false,
   marker: false,
   circlemarker: false,
+  circle: false,
   polygon: { shapeOptions: { color: '#2196f3', fillOpacity: 0.15, weight: 1 } },
-  rectangle: { shapeOptions: { color: '#e91e63', fillOpacity: 0.15, weight: 1 } },
-  circle: { shapeOptions: { color: '#4caf50', fillOpacity: 0.15, weight: 1 } }
+  rectangle: { shapeOptions: { color: '#e91e63', fillOpacity: 0.15, weight: 1 } }
 };
+
+const CIRCLE_SHAPE = { color: '#4caf50', fillOpacity: 0.15, weight: 1 };
 
 const toRad = (d) => (d * Math.PI) / 180;
 
@@ -49,6 +51,68 @@ function geometryAreaKm2(geom) {
 
 const fmt = (n, d = 0) => (n == null ? '–' : Number(n).toLocaleString('en-US', { maximumFractionDigits: d }));
 
+const RAMP_STOPS = ['#ffffcc', '#ffeda0', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c'].map((h) => {
+  const n = parseInt(h.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+});
+
+function rampColor(t) {
+  const x = Math.max(0, Math.min(1, t)) * (RAMP_STOPS.length - 1);
+  const i = Math.min(Math.floor(x), RAMP_STOPS.length - 2);
+  const f = x - i;
+  const a = RAMP_STOPS[i];
+  const b = RAMP_STOPS[i + 1];
+  const c = a.map((v, k) => Math.round(v + (b[k] - v) * f));
+  return 'rgb(' + c.join(',') + ')';
+}
+
+const fmtDensity = (v) => Math.round(v).toLocaleString('en-US');
+
+function makeDensityScale(vals) {
+  const ds = vals.filter((v) => v != null && !isNaN(v) && v > 0);
+  if (!ds.length) return null;
+  let lo = Math.min(...ds);
+  let hi = Math.max(...ds);
+  if (lo === hi) {
+    lo = hi / 2;
+    hi = hi * 2;
+  }
+  if (hi <= 0) {
+    lo = 0.5;
+    hi = 1;
+  }
+  const llo = Math.log(lo);
+  const lhi = Math.log(hi);
+  const bins = 5;
+  const b = [];
+  for (let i = 0; i < bins; i++) {
+    const t0 = i / bins;
+    const t1 = (i + 1) / bins;
+    const v0 = Math.exp(llo + (lhi - llo) * t0);
+    const v1 = Math.exp(llo + (lhi - llo) * t1);
+    b.push({ color: rampColor((t0 + t1) / 2), label: fmtDensity(v0) + '–' + fmtDensity(v1) });
+  }
+  return {
+    lo,
+    hi,
+    bins: b,
+    colorFor: (d) => {
+      const t = (Math.log(Math.max(d, lo)) - llo) / (lhi - llo);
+      return rampColor(t);
+    }
+  };
+}
+
+function applyResultStyle(layer, result, scale) {
+  if (!layer || typeof layer.setStyle !== 'function') return;
+  let s;
+  if (result.error) s = { fillColor: '#dc2626', fillOpacity: 0.45, color: '#b91c1c', weight: 1, dashArray: '4 2' };
+  else if (result.pending) s = { fillColor: '#d4d4d8', fillOpacity: 0.4, color: '#71717a', weight: 1, dashArray: '2 2' };
+  else if (result.density != null && scale) s = { fillColor: scale.colorFor(result.density), fillOpacity: 0.6, color: '#111827', weight: 1 };
+  else s = { fillColor: '#94a3b8', fillOpacity: 0.3, color: '#334155', weight: 1 };
+  layer.setStyle(s);
+}
+
 const layerToFeature = (layer) => {
   if (layer instanceof window.L.Circle) {
     const center = layer.getLatLng();
@@ -74,12 +138,17 @@ export default function PopulationEstimator() {
   const [zones, setZones] = useState([]);
   const [results, setResults] = useState({});
   const [showTable, setShowTable] = useState(false);
+  const [radiusKm, setRadiusKm] = useState(10);
 
   const mapRef = useRef(null);
   const drawnRef = useRef(null);
   const drawnInfoRef = useRef(new Map());
   const zoneCounterRef = useRef(1);
   const handlersRef = useRef(null);
+  const legendElRef = useRef(null);
+  const circleModeRef = useRef(false);
+  const circleBtnRef = useRef(null);
+  const radiusKmRef = useRef(10);
 
   useEffect(() => {
     if (mapRef.current) return;
@@ -160,6 +229,49 @@ export default function PopulationEstimator() {
       });
       map.addControl(drawControl);
 
+      const legendEl = document.createElement('div');
+      legendEl.className = 'density-legend';
+      legendEl.style.display = 'none';
+      legendElRef.current = legendEl;
+      const legendControl = window.L.control({ position: 'bottomright' });
+      legendControl.onAdd = () => legendEl;
+      legendControl.addTo(map);
+
+      const circleBtn = document.createElement('button');
+      circleBtn.type = 'button';
+      circleBtn.className = 'circle-gate';
+      circleBtn.title = 'Circle gate: tap/click places a circle of the header radius';
+      circleBtn.innerHTML = '○';
+      circleBtnRef.current = circleBtn;
+      const setCircleMode = (on) => {
+        circleModeRef.current = on;
+        circleBtn.classList.toggle('circle-gate-on', on);
+        map.getContainer().style.cursor = on ? 'crosshair' : '';
+      };
+      setCircleMode(false);
+      circleBtn.onclick = (ev) => {
+        window.L.DomEvent.stopPropagation(ev);
+        setCircleMode(!circleModeRef.current);
+      };
+      const circleControl = window.L.control({ position: 'topright' });
+      circleControl.onAdd = () => {
+        const wrap = document.createElement('div');
+        wrap.className = 'leaflet-control circle-gate-wrap';
+        wrap.appendChild(circleBtn);
+        return wrap;
+      };
+      circleControl.addTo(map);
+
+      map.on(window.L.Draw.Event.DRAWSTART, () => setCircleMode(false));
+
+      map.on('click', (e) => {
+        if (!circleModeRef.current) return;
+        const r = Number(radiusKmRef.current);
+        if (!r || r <= 0) return;
+        const circle = window.L.circle(e.latlng, { ...CIRCLE_SHAPE, radius: r * 1000 }).addTo(drawn);
+        handlersRef.current.handleCreated({ layer: circle });
+      });
+
       map.on(window.L.Draw.Event.CREATED, (e) => {
         drawn.addLayer(e.layer);
         handlersRef.current.handleCreated(e);
@@ -220,6 +332,32 @@ export default function PopulationEstimator() {
   };
 
   handlersRef.current = { handleCreated, handleEdited, handleDeleted };
+
+  useEffect(() => {
+    radiusKmRef.current = radiusKm;
+  }, [radiusKm]);
+
+  useEffect(() => {
+    const drawn = drawnRef.current;
+    if (!drawn) return;
+    const layers = drawn.getLayers().filter((l) => typeof l.toGeoJSON === 'function');
+    const vals = layers.map((l) => (results[window.L.stamp(l)] || {}).density).filter((v) => v != null);
+    const scale = makeDensityScale(vals);
+    layers.forEach((layer) => {
+      const id = window.L.stamp(layer);
+      applyResultStyle(layer, results[id] || {}, scale);
+    });
+    const el = legendElRef.current;
+    if (!el) return;
+    if (!scale) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = 'block';
+    el.innerHTML =
+      '<div class="dl-title">Density (p/km²)</div>' +
+      scale.bins.map((b) => '<div class="dl-row"><span class="dl-swatch" style="background:' + b.color + '"></span><span>' + b.label + '</span></div>').join('');
+  }, [zones, results]);
 
   const renameZone = (id, name) => {
     const info = drawnInfoRef.current.get(id);
@@ -379,7 +517,7 @@ export default function PopulationEstimator() {
 
   return (
     <AppLayout title="Population Estimator" fullscreen>
-      <Head>
+      <Head >
         <title>Population Estimator</title>
         <style>{`
           #population-map .leaflet-control a { text-decoration: none; }
@@ -389,6 +527,14 @@ export default function PopulationEstimator() {
           #zones-table .ant-table-tbody > tr > td:last-child,
           #zones-table .ant-table-thead > tr > th:last-child { text-align: center; }
           #zones-table .ant-input-sm { font-size: 12px; padding: 1px 6px; }
+          .density-legend { background: rgba(255,255,255,0.95); border-radius: 6px; padding: 6px 8px; font: 11px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; box-shadow: 0 1px 5px rgba(0,0,0,0.3); pointer-events: auto; }
+          .density-legend .dl-title { font-weight: 600; margin-bottom: 4px; }
+          .density-legend .dl-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+          .density-legend .dl-swatch { width: 18px; height: 10px; border: 1px solid rgba(0,0,0,0.15); display: inline-block; }
+          .circle-gate-wrap { margin-top: 4px; }
+          .circle-gate { display: block; width: 30px; height: 30px; padding: 0; background: #fff; border: 1px solid rgba(0,0,0,0.2); border-radius: 2px; cursor: pointer; font-size: 16px; line-height: 28px; text-align: center; color: #333; }
+          .circle-gate:hover { background: #f4f4f4; }
+          .circle-gate.circle-gate-on { background: #3498db; color: #fff; border-color: #1a5276; }
           @media (max-width: 640px) {
             #zones-table .ant-table-thead > tr > th { font-size: 10px; padding: 4px 6px; }
             #zones-table .ant-table-tbody > tr > td { padding: 3px 6px; }
@@ -400,10 +546,12 @@ export default function PopulationEstimator() {
       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" />
       <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js" />
 
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', fontFamily: '-apple-system, "Segoe UI", Roboto, sans-serif' }}>
+      <div style={{ height: '95%', display: 'flex', flexDirection: 'column', fontFamily: '-apple-system, "Segoe UI", Roboto, sans-serif' }}>
         <div style={{ background: '#1b3a5b', padding: '3px 10px', color: '#fff', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <h1 style={{ margin: 0, fontSize: 13, lineHeight: 1.2, fontWeight: 600 }}>Population Estimator</h1>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, color: '#cfe3ff' }}>Circle km</span>
+            <InputNumber size="small" min={0.1} max={500} value={radiusKm} onChange={(v) => setRadiusKm(v ?? 10)} style={{ width: 90 }} />
             <Tag color="blue" style={{ fontSize: 11, margin: 0 }}>{zones.length} zone(s)</Tag>
             <Button size="small" onClick={clearAll} disabled={!zones.length}>
               Clear all
@@ -431,7 +579,7 @@ export default function PopulationEstimator() {
                   summary={summary}
                   scroll={{ x: 'max-content' }}
                   locale={{
-                    emptyText: 'No zones yet. Use the draw toolbar (top-right of the map) to draw polygons, rectangles or circles — population loads automatically for each one.'
+                    emptyText: 'No zones yet. Press the ○ button (top-right, above the draw toolbar) to arm circle mode, then tap/click the map to drop a circle with the header radius. Or use the polygon / rectangle tools — population loads for each zone automatically.'
                   }}
                 />
               </div>
