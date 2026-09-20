@@ -49,6 +49,27 @@ function geometryAreaKm2(geom) {
 
 const fmt = (n, d = 0) => (n == null ? '–' : Number(n).toLocaleString('en-US', { maximumFractionDigits: d }));
 
+const layerToFeature = (layer) => {
+  if (layer instanceof window.L.Circle) {
+    const center = layer.getLatLng();
+    const radius = layer.getRadius();
+    const R = 6378137;
+    const lat = (center.lat * Math.PI) / 180;
+    const lng = (center.lng * Math.PI) / 180;
+    const d = radius / R;
+    const steps = 96;
+    const ring = [];
+    for (let i = 0; i <= steps; i++) {
+      const brng = (i / steps) * 2 * Math.PI;
+      const sinLat = Math.asin(Math.sin(lat) * Math.cos(d) + Math.cos(lat) * Math.sin(d) * Math.cos(brng));
+      const lon = lng + Math.atan2(Math.sin(brng) * Math.sin(d) * Math.cos(lat), Math.cos(d) - Math.sin(lat) * Math.sin(sinLat));
+      ring.push([(lon * 180) / Math.PI, (sinLat * 180) / Math.PI]);
+    }
+    return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [ring] } };
+  }
+  return layer.toGeoJSON();
+};
+
 export default function PopulationEstimator() {
   const [zones, setZones] = useState([]);
   const [results, setResults] = useState({});
@@ -75,10 +96,58 @@ export default function PopulationEstimator() {
         zoom: 4
       });
 
-      window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      const satellite = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
         maxZoom: 19
-      }).addTo(map);
+      });
+      const topo = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community',
+        maxZoom: 19
+      });
+      const transport = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Sources: Esri, DeLorme, HERE, MapmyIndia, &copy; OpenStreetMap contributors, and the GIS user community',
+        maxZoom: 19
+      });
+      const terrain = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; USGS, NOAA',
+        maxZoom: 19
+      });
+
+      const labels = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Labels &copy; Esri',
+        maxZoom: 19
+      });
+      const referenceOverlay = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Reference_Overlay/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Reference &copy; Esri',
+        maxZoom: 19
+      });
+      const transportOverlay = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Transport &copy; Esri',
+        maxZoom: 19
+      });
+      const hillshade = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Elevation &copy; Esri',
+        maxZoom: 19
+      });
+
+      satellite.addTo(map);
+      labels.addTo(map);
+
+      window.L.control.layers(
+        {
+          'Satellite': satellite,
+          'Topo': topo,
+          'Transport': transport,
+          'Terrain': terrain
+        },
+        {
+          'Labels': labels,
+          'Reference': referenceOverlay,
+          'Transport overlay': transportOverlay,
+          'Hillshade': hillshade
+        },
+        { position: 'topleft', collapsed: true }
+      ).addTo(map);
 
       const drawn = new window.L.FeatureGroup();
       map.addLayer(drawn);
@@ -111,7 +180,7 @@ export default function PopulationEstimator() {
       const info = drawnInfoRef.current.get(id);
       let areaKm2 = 0;
       try {
-        areaKm2 = geometryAreaKm2(layer.toGeoJSON().geometry);
+        areaKm2 = geometryAreaKm2(layerToFeature(layer).geometry);
       } catch (e) {
         // still in the middle of drawing - keep previous area
       }
@@ -181,15 +250,15 @@ export default function PopulationEstimator() {
 
   const runRow = async (layer) => {
     const id = window.L.stamp(layer);
-    const geojson = layer.toGeoJSON();
-    const areaKm2 = geometryAreaKm2(geojson.geometry);
+    const feature = layerToFeature(layer);
+    const areaKm2 = geometryAreaKm2(feature.geometry);
 
     setResults((prev) => ({ ...prev, [id]: { areaKm2, pending: true } }));
 
     try {
       const resp = await fetch(API_URL, {
         method: 'POST',
-        body: JSON.stringify({ type: 'FeatureCollection', features: [geojson] }),
+        body: JSON.stringify({ type: 'FeatureCollection', features: [feature] }),
         headers: { 'Content-type': 'application/json; charset=UTF-8' }
       });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
